@@ -41,39 +41,8 @@ const bootstrap = async () => {
 
     app.use(globalErrorHandling);
 
-    // --------
-    // cors
-    // var whitelist = process.env.ORIGINS.split(",");
-    // var corsOptions = {
-    //     origin: function (origin, callback) {
-    //         if (whitelist.indexOf(origin) !== -1) {
-    //             callback(null, true);
-    //         } else {
-    //             callback(new Error("Not allowed by CORS"));
-    //         }
-    //     },
-    // };
-    // app.use(cors(corsOptions));
-    // app.use(async (req, res, next) => {
-    //     if (!whitelist.includes(req.header('origin'))) {
-    //         return next(new Error('Not Allowed By CORS', { status: 403 }))
-    //     }
-    //     for (const origin of whitelist) {
-    //         if (req.header('origin') == origin) {
-    //             await res.header('Access-Control-Allow-Origin', origin);
-    //             break;
-    //         }
-    //     }
-    //     await res.header('Access-Control-Allow-Headers', '*')
-    //     await res.header("Access-Control-Allow-Private-Network", 'true')
-    //     await res.header('Access-Control-Allow-Methods', '*')
-    //     console.log("Origin Work");
-    //     next();
-    // });
-    // -------------------------
-
     app.listen(port, () =>
-        console.log(`Example app listening on port ${port}!`)
+        console.log(`Smart Autofix App listening on port ${port}!`)
     );
 };
 export default bootstrap;

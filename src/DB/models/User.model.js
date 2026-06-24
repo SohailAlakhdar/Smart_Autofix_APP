@@ -12,37 +12,16 @@ const userSchema = new mongoose.Schema(
             type: String,
             unique: true,
         },
-        confirmEmail: {
-            type: Date,
-        },
         phone: {
             type: String,
-            required: true,
-        },
-        age: {
-            type: Number,
             required: true,
         },
         password: {
             type: String,
             required: true,
         },
-        forgotPasswordOtp: {
-            type: String,
-        },
         confirmPassword: {
             type: String,
-        },
-        changeLoginCredentials: {
-            type: Date,
-        },
-        gender: {
-            type: String,
-            enum: {
-                values: Object.values(genderEnum),
-                message: "gender only allow male, female",
-            },
-            default: "male",
         },
         role: {
             type: String,
@@ -52,17 +31,6 @@ const userSchema = new mongoose.Schema(
             default: roleEnum.user,
         },
         picture: { secure_url: String, public_id: String },
-        verifyEmail: {
-            type: Date,
-        },
-        confirmEmailOtp: {
-            type: String,
-        },
-        lang: {
-            type: String,
-            enum: ["en", "ar"],
-            default: "ar",
-        },
         freezedAt: {
             type: Date,
         },

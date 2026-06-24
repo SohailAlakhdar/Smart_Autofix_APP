@@ -223,38 +223,4 @@ export const profileImage = asyncHandler(async (req, res, next) => {
     return successResponse({ res, data: { user } }); // ✅
 });
 // ------------------------
-export const profileCoverImage = asyncHandler(async (req, res, next) => {
-    // console.log("X:::", req);
 
-    // console.log({ service: req.files });
-    const attachments = await uploadFiles({
-        files: req.files,
-        path: `user/${req.user._id}/cover`,
-    });
-    if (!req.files) {
-        return next(
-            new Error("No file uploaded or file format is invalid", {
-                cause: 400,
-            })
-        );
-    }
-    const user = await DBService.findOneAndUpdate({
-        model: UserModel,
-        filter: {
-            _id: req.user._id,
-        },
-        update: {
-            coverPicture: attachments,
-        },
-        options: {
-            new: false,
-        },
-    });
-    // console.log(user.coverPicture);
-    if (user?.coverPicture?.length) {
-        await deleteResources({
-            public_id: user.coverPicture.map((ele) => ele.public_id),
-        });
-    }
-    return successResponse({ res, data: { files: req.files } }); // ✅
-});

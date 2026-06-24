@@ -80,15 +80,5 @@ router.patch(
     }).single("image"),
     userService.profileImage
 );
-// upload-cover-file
-router.patch(
-    "/upload-cover-file",
-    authentication(),
-    cloudeFieldUpload({
-        validation: [...fileValidation.image],
-    }).array("images", 5),
-    validation(validators.profileCoverImage),
-    userService.profileCoverImage
-);
 
 export default router;
