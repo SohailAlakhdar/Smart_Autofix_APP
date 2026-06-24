@@ -1,0 +1,7 @@
+src/config
+.env.dev
+.env.prod
+
+node_modules
+package-lock.json
+Smart_Autofix_App.txt
