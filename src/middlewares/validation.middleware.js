@@ -12,10 +12,17 @@ export const generalFields = {
         "string.empty": "Email is required",
         "string.email": "Email must be a valid email address",
     }),
-    password: joi.string().min(6).messages({
+    password: joi.string().min(3).messages({
         "string.empty": "Password is required",
-        "string.min": "Password must be at least 6 characters long",
+        "string.min": "Password must be at least 3 characters long",
     }),
+    confirmPassword: joi
+        .string()
+        .valid(joi.ref("password"))
+        .required()
+        .messages({
+            "any.only": "Confirm password must match password",
+        }),
     role: joi.string().valid("User", "Admin").messages({
         "any.only": "Role must be either 'User' or 'Admin'",
     }),
@@ -65,6 +72,19 @@ export const generalFields = {
         size: joi.number().positive().required(),
     },
     content: joi.string().required(),
+    location: joi.object({
+        type: joi.string().valid("Point"),
+        coordinates: joi.array()
+            .ordered(
+                joi.number().min(-180).max(180), // longitude
+                joi.number().min(-90).max(90)    // latitude
+            )
+            .length(2)
+
+            .messages({
+                "array.length": "Coordinates must be [longitude, latitude]",
+            }),
+    }),
 };
 
 export const validation = (schema) => {
@@ -86,12 +106,12 @@ export const validation = (schema) => {
                 });
             }
         }
-        // if (validationErrors.length > 0) {
-        //     return res.status(400).json({
-        //         message: "Validation Error",
-        //         details: validationErrors,
-        //     });
-        // }
+        if (validationErrors.length > 0) {
+            return res.status(400).json({
+                message: "Validation Error",
+                details: validationErrors,
+            });
+        }
 
         return next();
     });

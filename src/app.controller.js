@@ -6,6 +6,8 @@ dotenv.config({ path: path.join(`./src/config/${envFile}`) });
 import express from "express";
 import authController from "./modules/auth/auth.controller.js";
 import userController from "./modules/user/user.controller.js";
+import serviceCenterController from "./modules/serviceCenter/serviceCenter.controller.js";
+import towTruckController from "./modules//twoTruck/twoTruck.controller.js";
 import { connectDB } from "./DB/connection.db.js";
 import { globalErrorHandling } from "./utils/response.js";
 // import cors from "cors";
@@ -21,8 +23,8 @@ const bootstrap = async () => {
 
     // limiter
     const limiter = rateLimit({
-        windowMs: 2 * 60 * 1000, // 2 minutes
-        max: 5,
+        windowMs: 15 * 60 * 1000, // 2 minutes
+        max: 100,
         message: "Too many requests from this IP, please try again later",
     });
     app.use(limiter);
@@ -32,6 +34,8 @@ const bootstrap = async () => {
     app.use(morgan("dev"));
     app.use("/uploads", express.static(path.resolve("./src/uploads")));
     // app routing
+    app.use("/service-centers", serviceCenterController);
+    app.use("/tow-trucks", towTruckController);
     app.use("/auth", authController);
     app.use("/user", userController);
     app.get("/", (req, res) => res.send("Hello World!"));

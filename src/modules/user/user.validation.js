@@ -15,9 +15,8 @@ export const BasicUpdateSchema = {
         .keys({
             name: generalFields.name.optional(),
             phone: generalFields.phone.optional(),
-            age: generalFields.age.optional(),
-            gender: generalFields.gender.optional(),
             lang: generalFields.lang.optional(),
+            location: generalFields.location.optional(),
         })
         .required()
         .messages({

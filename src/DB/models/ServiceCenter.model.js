@@ -1,10 +1,13 @@
-const mongoose = require('mongoose');
+import mongoose from "mongoose";
 
 const serviceCenterSchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true },
     phone: { type: String, required: true },
-    address: { type: String },
+    address: {
+      type: String,
+      trim: true,
+    },
 
     location: {
       type: { type: String, enum: ['Point'], default: 'Point' },
@@ -12,11 +15,20 @@ const serviceCenterSchema = new mongoose.Schema(
     },
 
     specialties: { type: [String], default: [] }, // مثال: كهرباء سيارات، مكينة، إطارات
-    isActive: { type: Boolean, default: true },
+    rating: {
+      type: Number,
+      min: 0,
+      max: 5,
+      default: 0,
+    },
+    workingHours: {
+      type: String, // e.g. "9:00 AM - 10:00 PM"
+      default: null,
+    },
   },
   { timestamps: true }
 );
 
 serviceCenterSchema.index({ location: '2dsphere' });
 
-module.exports = mongoose.model('ServiceCenter', serviceCenterSchema);
+export default mongoose.model("ServiceCenter", serviceCenterSchema);

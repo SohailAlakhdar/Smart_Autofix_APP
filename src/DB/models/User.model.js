@@ -15,6 +15,7 @@ const userSchema = new mongoose.Schema(
         phone: {
             type: String,
             required: true,
+            trim: true,
         },
         password: {
             type: String,
@@ -22,6 +23,17 @@ const userSchema = new mongoose.Schema(
         },
         confirmPassword: {
             type: String,
+        },
+        location: {
+            type: {
+                type: String,
+                enum: ['Point'],
+                default: 'Point',
+            },
+            coordinates: {
+                type: [Number], // [longitude, latitude]
+                default: [0, 0],
+            },
         },
         role: {
             type: String,
@@ -38,26 +50,14 @@ const userSchema = new mongoose.Schema(
             type: mongoose.Schema.Types.ObjectId,
             ref: "User",
         },
+
     },
     {
         timestamps: true,
     }
 );
 
-userSchema.virtual("fullname").set(function (value) {
-    const [firstname, lastname] = value.split(" ") || [];
-    this.set({ firstname, lastname });
-})
-    .get(function () {
-        return `${this.firstname} ${this.lastname}`;
-    });
 
-userSchema.virtual("messages", {
-    localField: "_id",
-    foreignField: "receiverId",
-    ref: "Message",
-
-})
 export const UserModel =
     mongoose.models.User || mongoose.model("User", userSchema);
 UserModel.syncIndexes();

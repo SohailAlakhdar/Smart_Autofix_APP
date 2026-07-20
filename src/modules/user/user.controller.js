@@ -19,19 +19,16 @@ router.get(
     userService.getUserId
 );
 
-//  sharing a user's profile
 router.get(
-    "/:userId/share-profile",
-    validation(validators.shareProfile),
-    userService.shareProfile
+    "/users",
+    auth({
+        tokenType: tokenTypeEnum.access,
+        accessRoles: Object.values(roleEnum),
+    }),
+    userService.getUsers
 );
 
-// getting new login credentials
-router.get(
-    "/profile/refresh-token",
-    auth({ tokenType: tokenTypeEnum.refresh }),
-    userService.getNewLoginCredentials
-);
+
 
 // Update basic profile
 router.patch(
@@ -40,37 +37,6 @@ router.patch(
     validation(validators.BasicUpdateSchema),
     userService.updateBasicProfile
 );
-// update password
-router.patch(
-    "/password",
-    authentication(),
-    validation(validators.updatePassword),
-    userService.updatePassword
-);
-// freeze account
-router.delete(
-    "/freeze-account/:userId",
-    authentication(),
-    validation(validators.freezeAccount),
-    userService.freezeAccount
-);
-// delete account
-router.delete(
-    "/delete-account/:userId",
-    authentication(),
-    validation(validators.deleteAccount),
-    userService.deleteAccount
-);
-// restore account
-router.patch(
-    "/restore-account/:userId",
-    auth({ accessRoles: [roleEnum.admin] }),
-    validation(validators.restoreAccount),
-    userService.restoreAccount
-);
-// logout
-router.post("/logout", authentication(), userService.logout);
-
 // upload-file
 router.patch(
     "/upload-file",
@@ -80,5 +46,37 @@ router.patch(
     }).single("image"),
     userService.profileImage
 );
+
+// update password
+router.patch(
+    "/password",
+    authentication(),
+    validation(validators.updatePassword),
+    userService.changePassword
+);
+// freeze account
+router.delete(
+    "/freeze-account/:userId",
+    authentication(),
+    validation(validators.freezeAccount),
+    userService.freezeAccount
+);
+router.patch(
+    "/restore-account/:userId",
+    authentication(),
+    validation(validators.restoreAccount),
+    userService.restoreAccount
+);
+// delete account
+router.delete(
+    "/delete-account/:userId",
+    authentication(),
+    validation(validators.deleteAccount),
+    userService.deleteAccount
+);
+
+// logout
+router.post("/logout", authentication(), userService.logout);
+
 
 export default router;

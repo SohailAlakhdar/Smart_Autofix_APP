@@ -26,20 +26,21 @@ export const getUserId = asyncHandler(async (req, res, next) => {
     });
     return successResponse({ res, data: { user } }); // ✅
 });
-
-export const shareProfile = asyncHandler(async (req, res, next) => {
-    // console.log("Share Profile Request:", req.params, req.query);
-
-    const { userId } = req.params;
-    const user = await DBService.findOne({
+export const getUsers = asyncHandler(async (req, res, next) => {
+    const users = await DBService.find({
         model: UserModel,
-        filter: { _id: userId },
-        select: "-password",
+        filter: { freezedBy: { $exists: false } }
     });
-    return user
-        ? successResponse({ res, data: user })
-        : next(new Error("User not found", { cause: 404 }));
+    for (const user of users) {
+        user.phone = await decGenerate({
+            ciphertext: user.phone,
+            secretKey: process.env.ENCRYPTION_SECRET,
+        });
+    }
+    return successResponse({ res, data: { users } }); // ✅
 });
+
+
 
 export const getNewLoginCredentials = asyncHandler(async (req, res, next) => {
     const user = req.user;
@@ -69,10 +70,10 @@ export const updateBasicProfile = asyncHandler(async (req, res, next) => {
     const user = await DBService.findOneAndUpdate({
         model: UserModel,
         filter: { _id: req.user._id },
-        update: req.body,
         update: {
             $set: {
                 ...req.body,
+                updatedAt: Date.now(),
             },
             $inc: { __v: 1 },
         },
@@ -80,7 +81,7 @@ export const updateBasicProfile = asyncHandler(async (req, res, next) => {
     return successResponse({ res, data: user }); // ✅
 });
 
-export const updatePassword = asyncHandler(async (req, res, next) => {
+export const changePassword = asyncHandler(async (req, res, next) => {
     // console.log("Update Password Request:", req.params, req.body);
     const { password, oldPassword, confirmPassword } = req.body;
     if (
@@ -101,7 +102,7 @@ export const updatePassword = asyncHandler(async (req, res, next) => {
         update: {
             $set: {
                 password: generateHash({ plaintext: password }),
-                changeLoginCredentials: Date.now(),
+                updatedAt: Date.now(),
             },
             $inc: { __v: 1 },
         },
@@ -163,7 +164,6 @@ export const deleteAccount = asyncHandler(async (req, res, next) => {
 });
 
 export const restoreAccount = asyncHandler(async (req, res, next) => {
-    // console.log("Restore Account Request:", req.params, req.body);
     const { userId } = req.params;
     if (req.user.role !== roleEnum.admin) {
         return next(
