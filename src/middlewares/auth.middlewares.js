@@ -43,7 +43,6 @@ export const auth = ({
             tokenType,
         });
 
-        // console.log(accessRoles, user.role);
         if (!user) return;
         if (!accessRoles.includes(user.role)) {
             return next(

@@ -39,7 +39,7 @@ router.patch(
 );
 // upload-file
 router.patch(
-    "/upload-file",
+    "/profile-image",
     authentication(),
     cloudeFieldUpload({
         validation: fileValidation.image,

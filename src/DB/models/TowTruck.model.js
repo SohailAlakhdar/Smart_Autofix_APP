@@ -8,8 +8,15 @@ const towTruckSchema = new mongoose.Schema(
       type: { type: String, enum: ['Point'], default: 'Point' },
       coordinates: { type: [Number], required: true }, // [lng, lat]
     },
-
-    rating: { type: Number, default: 0 }
+    freezedAt: {
+      type: Date,
+    },
+    freezedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
+    rating: { type: Number, default: 0 },
+    ratingsCount: { type: Number, default: 0 }
 
   },
   { timestamps: true }
@@ -17,4 +24,6 @@ const towTruckSchema = new mongoose.Schema(
 
 towTruckSchema.index({ location: '2dsphere' });
 
-module.exports = mongoose.model('TowTruck', towTruckSchema);
+export const TowTruckModel =
+  mongoose.models.TowTruck || mongoose.model("TowTruck", towTruckSchema);
+TowTruckModel.syncIndexes();

@@ -7,9 +7,13 @@ export let FaultReportStatusEnum = {
     resolved_by_user: "resolved_by_user",
     needs_technician: "needs_technician",
 }
+export let DifficultyEnum = {
+    easy: "easy",
+    hard: "hard"
+}
 const nearestServiceCenterSchema = new mongoose.Schema(
     {
-        refId: { type: Schema.Types.ObjectId, ref: 'ServiceCenter' },
+        refId: { type: mongoose.Schema.Types.ObjectId, ref: 'ServiceCenter' },
         name: String,
         phone: String,
         distanceKm: Number,
@@ -19,7 +23,7 @@ const nearestServiceCenterSchema = new mongoose.Schema(
 
 const nearestTowTruckSchema = new mongoose.Schema(
     {
-        refId: { type: Schema.Types.ObjectId, ref: 'TowTruck' },
+        refId: { type: mongoose.Schema.Types.ObjectId, ref: 'TowTruck' },
         name: String,
         phone: String,
         distanceKm: Number,
@@ -27,7 +31,7 @@ const nearestTowTruckSchema = new mongoose.Schema(
     { _id: false }
 );
 
-const FaultReportSchema = new mongoose.Schema(
+const faultReportSchema = new mongoose.Schema(
     {
         userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
         faultType: { type: String, enum: [FaultTypeEnum.text, FaultTypeEnum.image] },
@@ -38,7 +42,7 @@ const FaultReportSchema = new mongoose.Schema(
         faultImage: { secure_url: String, public_id: String },       // النص أو رابط الصورة
         aiResult: {
             faultName: String,
-            difficulty: { type: String, enum: [FaultReportStatusEnum.resolved_by_user, FaultReportStatusEnum.needs_technician, FaultReportStatusEnum.pending] },
+            difficulty: { type: String, enum: [DifficultyEnum.easy, DifficultyEnum.hard] },
             requiredTools: [String],
             steps: [String],
             safetyTips: [String],
@@ -59,7 +63,13 @@ const FaultReportSchema = new mongoose.Schema(
             rating: Number,
             comment: String
         },
-        createdAt: Date
+        freezedAt: {
+            type: Date,
+        },
+        freezedBy: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User",
+        },
     },
     { timestamps: true }
 );
@@ -68,5 +78,5 @@ faultReportSchema.index({ userId: 1, createdAt: -1 });
 faultReportSchema.index({ location: '2dsphere' });
 
 export const FaultReportModel =
-    mongoose.models.FaultReport || mongoose.model("FaultReport", FaultReportSchema);
+    mongoose.models.FaultReport || mongoose.model("FaultReport", faultReportSchema);
 FaultReportModel.syncIndexes();

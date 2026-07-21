@@ -8,6 +8,7 @@ import authController from "./modules/auth/auth.controller.js";
 import userController from "./modules/user/user.controller.js";
 import serviceCenterController from "./modules/serviceCenter/serviceCenter.controller.js";
 import towTruckController from "./modules//twoTruck/twoTruck.controller.js";
+import faultController from "./modules/fault/fault.controller.js";
 import { connectDB } from "./DB/connection.db.js";
 import { globalErrorHandling } from "./utils/response.js";
 // import cors from "cors";
@@ -38,15 +39,15 @@ const bootstrap = async () => {
     app.use("/tow-trucks", towTruckController);
     app.use("/auth", authController);
     app.use("/user", userController);
+    app.use("/fault", faultController);
     app.get("/", (req, res) => res.send("Hello World!"));
     app.all("/*dummy", (req, res, next) => {
         res.status(404).json({ message: "In-valid app routing" });
     });
-
     app.use(globalErrorHandling);
 
     app.listen(port, () =>
-        console.log(`Smart Autofix App listening on port ${port}!`)
+        console.log(`Smart Autofix App is listening on port localhost:${port} ! 🪷`)
     );
 };
 export default bootstrap;
