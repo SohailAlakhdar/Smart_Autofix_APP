@@ -4,7 +4,7 @@ import { ServiceCenterModel } from "./models/ServiceCenter.model.js";
 import { TowTruckModel } from "./models/TowTruck.model.js";
 
 export const connectDB = asyncHandler(async () => {
-    const result = await mongoose.connect(process.env.URI);
+    const result = await mongoose.connect(process.env.MONGO_URI);
     console.log("Database Name:", mongoose.connection.name);
     console.log("DB Connected 👌");
 });

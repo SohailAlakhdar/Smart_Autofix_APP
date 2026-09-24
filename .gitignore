@@ -3,7 +3,8 @@ src/config
 .env.prod
 
 node_modules
-package-lock.json
 Smart_Autofix_App.txt
 UI_UX.txt
 other
+
+Notes
