@@ -7,7 +7,7 @@ import express from "express";
 import authController from "./modules/auth/auth.controller.js";
 import userController from "./modules/user/user.controller.js";
 import serviceCenterController from "./modules/serviceCenter/serviceCenter.controller.js";
-import towTruckController from "./modules//twoTruck/twoTruck.controller.js";
+import towTruckController from "./modules//towTruck/towTruck.controller.js";
 import faultController from "./modules/fault/fault.controller.js";
 import { connectDB } from "./DB/connection.db.js";
 import { globalErrorHandling } from "./utils/response.js";

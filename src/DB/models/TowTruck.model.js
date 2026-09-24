@@ -8,6 +8,10 @@ const towTruckSchema = new mongoose.Schema(
       type: { type: String, enum: ['Point'], default: 'Point' },
       coordinates: { type: [Number], required: true }, // [lng, lat]
     },
+    isAvailable: {
+      type: Boolean,
+      default: true,
+    },
     freezedAt: {
       type: Date,
     },
@@ -16,7 +20,14 @@ const towTruckSchema = new mongoose.Schema(
       ref: "User",
     },
     rating: { type: Number, default: 0 },
-    ratingsCount: { type: Number, default: 0 }
+    ratingsCount: { type: Number, default: 0 },
+    ratingsBreakdown: {
+      1: { type: Number, default: 0 },
+      2: { type: Number, default: 0 },
+      3: { type: Number, default: 0 },
+      4: { type: Number, default: 0 },
+      5: { type: Number, default: 0 },
+    },
 
   },
   { timestamps: true }

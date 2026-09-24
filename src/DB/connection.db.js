@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import { asyncHandler } from "../utils/response.js";
 import { ServiceCenterModel } from "./models/ServiceCenter.model.js";
+import { TowTruckModel } from "./models/TowTruck.model.js";
 
 export const connectDB = asyncHandler(async () => {
     const result = await mongoose.connect(process.env.URI);
@@ -17,134 +18,57 @@ export const InsertData = asyncHandler(async (Model, data) => {
 
 const sampleData =[
   {
-    "name": "Cairo Auto Care",
-    "phone": "+201001234567",
+    "name": "Fast Rescue Towing",
+    "phone": "+201012345678",
     "location": {
       "type": "Point",
-      "coordinates": [31.2089, 30.0131],
-      "address": "Dokki, Giza",
-      "city": "Giza"
+      "coordinates": [31.2089, 30.0131]
     },
-    "specialties": ["oil-change", "engine"],
-    "workingHours": "Sat-Thu 9:00-22:00",
+    "isAvailable": true,
     "rating": 4.5,
-    "ratingsCount": 12
+    "ratingsCount": 12,
+    "ratingsBreakdown": { "1": 0, "2": 0, "3": 1, "4": 4, "5": 7 }
   },
   {
-    "name": "Nasr City Motors",
-    "phone": "+201009876543",
+    "name": "Cairo Roadside Assist",
+    "phone": "+201098765432",
     "location": {
       "type": "Point",
-      "coordinates": [31.3421, 30.0626],
-      "address": "Nasr City, Cairo",
-      "city": "Cairo"
+      "coordinates": [31.2357, 30.0444]
     },
-    "specialties": ["electrical", "oil-change"],
-    "workingHours": "Sun-Fri 10:00-20:00",
-    "rating": 4.0,
-    "ratingsCount": 8
+    "isAvailable": false,
+    "rating": 3.8,
+    "ratingsCount": 5,
+    "ratingsBreakdown": { "1": 0, "2": 1, "3": 1, "4": 2, "5": 1 }
   },
   {
-    "name": "Alex Engine Experts",
-    "phone": "+201115551111",
+    "name": "Nasr City Tow Service",
+    "phone": "+201155566677",
     "location": {
       "type": "Point",
-      "coordinates": [29.9187, 31.2001],
-      "address": "Sidi Gaber, Alexandria",
-      "city": "Alexandria"
+      "coordinates": [31.3421, 30.0626]
     },
-    "specialties": ["engine", "transmission"],
-    "workingHours": "Sat-Thu 8:30-21:00",
-    "rating": 4.8,
-    "ratingsCount": 32
+    "isAvailable": true,
+    "rating": 0,
+    "ratingsCount": 0,
+    "ratingsBreakdown": { "1": 0, "2": 0, "3": 0, "4": 0, "5": 0 }
   },
   {
-    "name": "Smart Car Clinic",
-    "phone": "+201122223333",
+    "name": "Hurghada Highway Rescue",
+    "phone": "+201233344455",
     "location": {
       "type": "Point",
-      "coordinates": [31.2506, 30.0444],
-      "address": "Downtown Cairo",
-      "city": "Cairo"
+      "coordinates": [33.8116, 27.2579]
     },
-    "specialties": ["diagnostics", "electrical"],
-    "workingHours": "Daily 9:00-23:00",
-    "rating": 4.7,
-    "ratingsCount": 45
-  },
-  {
-    "name": "Giza Mechanical Center",
-    "phone": "+201133334444",
-    "location": {
-      "type": "Point",
-      "coordinates": [31.2012, 29.9876],
-      "address": "Haram, Giza",
-      "city": "Giza"
-    },
-    "specialties": ["suspension", "brakes"],
-    "workingHours": "Sat-Thu 8:00-20:00",
-    "rating": 4.3,
-    "ratingsCount": 18
-  },
-  {
-    "name": "AutoFix Mansoura",
-    "phone": "+201144445555",
-    "location": {
-      "type": "Point",
-      "coordinates": [31.3785, 31.0409],
-      "address": "Mansoura Center",
-      "city": "Mansoura"
-    },
-    "specialties": ["engine", "electrical", "diagnostics"],
-    "workingHours": "Sun-Fri 9:00-21:00",
-    "rating": 4.6,
-    "ratingsCount": 26
-  },
-  {
-    "name": "Delta Auto Service",
-    "phone": "+201155556666",
-    "location": {
-      "type": "Point",
-      "coordinates": [31.3807, 30.7906],
-      "address": "Tanta Downtown",
-      "city": "Tanta"
-    },
-    "specialties": ["oil-change", "tires", "brakes"],
-    "workingHours": "Daily 8:00-22:00",
-    "rating": 4.2,
-    "ratingsCount": 21
-  },
-  {
-    "name": "Luxor Car Solutions",
-    "phone": "+201166667777",
-    "location": {
-      "type": "Point",
-      "coordinates": [32.6396, 25.6872],
-      "address": "Luxor City",
-      "city": "Luxor"
-    },
-    "specialties": ["engine", "air-conditioning"],
-    "workingHours": "Sat-Thu 9:00-19:00",
-    "rating": 4.9,
-    "ratingsCount": 51
-  },
-  {
-    "name": "Aswan Auto Garage",
-    "phone": "+201177778888",
-    "location": {
-      "type": "Point",
-      "coordinates": [32.8998, 24.0889],
-      "address": "Aswan Downtown",
-      "city": "Aswan"
-    },
-    "specialties": ["battery", "electrical", "diagnostics"],
-    "workingHours": "Sun-Fri 8:30-18:30",
-    "rating": 4.4,
-    "ratingsCount": 15
-  },
+    "isAvailable": true,
+    "rating": 5,
+    "ratingsCount": 3,
+    "ratingsBreakdown": { "1": 0, "2": 0, "3": 0, "4": 0, "5": 3 }
+  }
 ]
 // InsertData(ServiceCenterModel, sampleData);
 // InsertData(TowTruckModel, sampleData);
+
 
 
 
