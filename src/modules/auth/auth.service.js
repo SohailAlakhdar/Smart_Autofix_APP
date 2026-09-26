@@ -50,10 +50,10 @@ export const signup = asyncHandler(async (req, res, next) => {
         });
     }
 
-    await sendSms({
-        phone,
-        message: `Your Smart Autofix verification code is ${otp}`,
-    });
+    // await sendSms({
+    //     phone,
+    //     message: `Your Smart Autofix verification code is ${otp}`,
+    // });
 
     return successResponse({ res, message: "OTP sent successfully" });
 });
@@ -178,10 +178,10 @@ export const forgotPassword = asyncHandler(async (req, res, next) => {
             }
         );
 
-        await sendSms({
-            phone,
-            message: `Your Smart Autofix password reset code is ${otp}`,
-        });
+        // await sendSms({
+        //     phone,
+        //     message: `Your Smart Autofix password reset code is ${otp}`,
+        // });
     }
 
     return successResponse({
