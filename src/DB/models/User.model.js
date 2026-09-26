@@ -50,6 +50,14 @@ const userSchema = new mongoose.Schema(
             type: mongoose.Schema.Types.ObjectId,
             ref: "User",
         },
+        isPhoneVerified: {
+            type: Boolean,
+            default: false
+        },
+        otp: {
+            code: String,
+            expiresAt: Date
+        },
 
     },
     {
@@ -61,3 +69,4 @@ const userSchema = new mongoose.Schema(
 export const UserModel =
     mongoose.models.User || mongoose.model("User", userSchema);
 UserModel.syncIndexes();
+export default UserModel;

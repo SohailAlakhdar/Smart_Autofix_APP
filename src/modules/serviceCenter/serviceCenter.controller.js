@@ -15,13 +15,9 @@ router.get(
     serviceCenterService.listServiceCenters
 );
 
-// Nearest service centers by lat/lng — any authenticated role
+// Nearest service centers by lat/lng — Public, no login/fault/image required
 router.get(
     "/nearby",
-    auth({
-        tokenType: tokenTypeEnum.access,
-        accessRoles: Object.values(roleEnum),
-    }),
     validation(validators.nearbyServiceCenters),
     serviceCenterService.nearbyServiceCenters
 );
@@ -66,6 +62,16 @@ router.delete(
     serviceCenterService.deleteServiceCenter
 );
 
+// Unfreeze a service center — admin only (was missing)
+router.patch(
+    "/:id/unfreeze",
+    auth({
+        tokenType: tokenTypeEnum.access,
+        accessRoles: [roleEnum.admin],
+    }),
+    validation(validators.serviceCenterId),
+    serviceCenterService.unfreezeServiceCenter
+);
 
 // Rate a service center — any authenticated role
 router.post(

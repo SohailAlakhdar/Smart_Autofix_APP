@@ -7,8 +7,9 @@ import express from "express";
 import authController from "./modules/auth/auth.controller.js";
 import userController from "./modules/user/user.controller.js";
 import serviceCenterController from "./modules/serviceCenter/serviceCenter.controller.js";
-import towTruckController from "./modules//towTruck/towTruck.controller.js";
+import towTruckController from "./modules/towTruck/towTruck.controller.js";
 import faultController from "./modules/fault/fault.controller.js";
+import adminController from "./modules/admin/admin.controller.js";
 import { connectDB } from "./DB/connection.db.js";
 import { globalErrorHandling } from "./utils/response.js";
 // import cors from "cors";
@@ -40,6 +41,7 @@ const bootstrap = async () => {
     app.use("/auth", authController);
     app.use("/user", userController);
     app.use("/fault", faultController);
+    app.use("/admin", adminController);
     app.get("/", (req, res) => res.send("Hello World!"));
     app.all("/*dummy", (req, res, next) => {
         res.status(404).json({ message: "In-valid app routing" });

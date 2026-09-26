@@ -6,10 +6,11 @@ import { tokenTypeEnum } from "../../utils/security/token.security.js";
 import { deleteFault, diagnoseFault, getAllFaults, getCommonFaultStats, getFaultById, getFaultHistory, submitFeedback } from "./fault.service.js";
 import { validation } from "../../middlewares/validation.middleware.js";
 import { fileValidation } from "../../utils/multer/local.multer.js";
-import { cloudeFieldUpload } from "../../utils/multer/cloude.multer.js";
+import { cloudeFieldUpload } from "../../utils/multer/cloud.multer.js";
+import { roleEnum } from "../../DB/models/User.model.js";
 
 // All fault routes require a logged-in, non-frozen user
-router.use(auth(tokenTypeEnum.access, ["User"]));
+router.use(auth(tokenTypeEnum.access, [roleEnum.user, roleEnum.admin]));
 
 // Admin-only routes (must be declared BEFORE "/:id" to avoid route collision)
 router.get("/stats/common", auth(tokenTypeEnum.access, ["Admin"]), getCommonFaultStats);

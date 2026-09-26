@@ -1,12 +1,14 @@
 import { TowTruckModel } from "../../DB/models/TowTruck.model.js";
-import { TowRequestModel } from "../../DB/models/TowRequest.model.js";
 import { RatingModel, rateableTypeEnum } from "../../DB/models/Rate.model.js";
 
 // GET /tow-trucks  (Public)
 export const listTowTrucks = async (req, res) => {
     const { page = 1, limit = 20, isAvailable } = req.query;
 
-    const filter = {};
+    // FIX: no freeze filter previously — a frozen truck was fully visible
+    // in the public listing. Hidden from public views the same way
+    // serviceCenter now does it.
+    const filter = { freezedAt: null };
     if (isAvailable !== undefined) filter.isAvailable = isAvailable === "true" || isAvailable === true;
 
     const skip = (Number(page) - 1) * Number(limit);
@@ -26,11 +28,12 @@ export const listTowTrucks = async (req, res) => {
     });
 };
 
-// GET /tow-trucks/nearby  (Private — any authenticated role)
+// GET /tow-trucks/nearby  (Public — no auth, no fault, no image required)
 export const nearbyTowTrucks = async (req, res) => {
     const { lat, lng, maxDistanceKm = 10, limit = 5, onlyAvailable } = req.query;
 
     const filter = {
+        freezedAt: null, // FIX: frozen trucks were previously returned in nearby search
         location: {
             $near: {
                 $geometry: { type: "Point", coordinates: [Number(lng), Number(lat)] },
@@ -59,7 +62,9 @@ export const nearbyTowTrucks = async (req, res) => {
 
 // GET /tow-trucks/:id  (Public)
 export const getTowTruck = async (req, res) => {
-    const truck = await TowTruckModel.findOne({ _id: req.params.id });
+    // FIX: previously had no freeze filter — a frozen truck's details
+    // stayed fully visible to the public.
+    const truck = await TowTruckModel.findOne({ _id: req.params.id, freezedAt: null });
 
     if (!truck) {
         return res.status(404).json({ success: false, message: "Tow truck not found" });
@@ -80,7 +85,9 @@ export const createTowTruck = async (req, res) => {
     return res.status(201).json({ success: true, data: truck });
 };
 
-// PUT /tow-trucks/:id  (Admin)
+// PUT /tow-trucks/:id  (Admin) — intentionally NOT filtered by freezedAt,
+// so admin can still edit a frozen truck's details before unfreezing it.
+// See note about aligning this policy with serviceCenter.
 export const updateTowTruck = async (req, res) => {
     const allowedFields = ["name", "phone", "location"];
     const updates = {};
@@ -116,41 +123,12 @@ export const deleteTowTruck = async (req, res) => {
     return res.json({ success: true, message: "Tow truck frozen", data: truck });
 };
 
-// POST /tow-trucks/:id/request  (Private) — direct request, no fault report
-export const requestTowTruck = async (req, res) => {
-    const { location } = req.body;
-
-    const truck = await TowTruckModel.findOne({ _id: req.params.id });
-    if (!truck) {
-        return res.status(404).json({ success: false, message: "Tow truck not found" });
-    }
-
-    if (!truck.isAvailable) {
-        return res.status(409).json({ success: false, message: "This tow truck is currently busy" });
-    }
-
-    const request = await TowRequestModel.create({
-        user: req.user._id,
-        towTruck: truck._id,
-        userLocation: location,
-    });
-
-    return res.status(201).json({
-        success: true,
-        data: {
-            request,
-            towTruck: { name: truck.name, phone: truck.phone, location: truck.location },
-        },
-    });
-};
-
-// PUT /tow-trucks/:id/availability  (Technician/Admin)
-export const updateAvailability = async (req, res) => {
-    const { isAvailable } = req.body;
-
-    const truck = await TowTruckModel.findOneAndUpdate(
-        { _id: req.params.id },
-        { isAvailable },
+// PATCH /tow-trucks/:id/unfreeze  (Admin) — was missing entirely; section 22
+// lists Unfreeze alongside Freeze for Tow Trucks.
+export const unfreezeTowTruck = async (req, res) => {
+    const truck = await TowTruckModel.findByIdAndUpdate(
+        req.params.id,
+        { freezedBy: null, freezedAt: null },
         { new: true }
     );
 
@@ -158,11 +136,11 @@ export const updateAvailability = async (req, res) => {
         return res.status(404).json({ success: false, message: "Tow truck not found" });
     }
 
-    return res.json({ success: true, data: truck });
+    return res.json({ success: true, message: "Tow truck unfrozen", data: truck });
 };
 
-// POST /tow-trucks/:id/rate  (Private)
-// Same upsert-and-recompute pattern used for ServiceCenter ratings.
+
+// POST /tow-trucks/:id/rate  (Private — requires auth)
 export const rateTowTruck = async (req, res) => {
     const { rating } = req.body;
 
@@ -201,8 +179,10 @@ export const rateTowTruck = async (req, res) => {
 
 function percentBreakdown(truck) {
     const total = truck.ratingsCount;
+    // FIX: ratingsBreakdown can be undefined on a never-rated truck —
+    // Object.entries(undefined) throws. Default to {} instead.
     return Object.fromEntries(
-        Object.entries(truck.ratingsBreakdown).map(([star, count]) => [
+        Object.entries(truck.ratingsBreakdown ?? {}).map(([star, count]) => [
             star,
             total ? Math.round((count / total) * 100) : 0,
         ])

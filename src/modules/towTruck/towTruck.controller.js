@@ -15,13 +15,9 @@ router.get(
     towTruckService.listTowTrucks
 );
 
-// Nearest tow trucks by lat/lng — any authenticated role
+// Nearest tow trucks by lat/lng — Public, no login/fault/image required
 router.get(
     "/nearby",
-    auth({
-        tokenType: tokenTypeEnum.access,
-        accessRoles: Object.values(roleEnum),
-    }),
     validation(validators.nearbyTowTrucks),
     towTruckService.nearbyTowTrucks
 );
@@ -66,24 +62,18 @@ router.delete(
     towTruckService.deleteTowTruck
 );
 
-// Request a tow truck directly, no fault report attached — any authenticated role
-router.post(
-    "/:id/request",
-    authentication(),
-    validation(validators.requestTowTruck),
-    towTruckService.requestTowTruck
-);
-
-// Update availability (متاح/مشغول) —  admin
-router.put(
-    "/:id/availability",
+// Unfreeze a tow truck — admin only (was missing)
+router.patch(
+    "/:id/unfreeze",
     auth({
         tokenType: tokenTypeEnum.access,
-        accessRoles: [roleEnum.admin, roleEnum.technician],
+        accessRoles: [roleEnum.admin],
     }),
-    validation(validators.updateAvailability),
-    towTruckService.updateAvailability
+    validation(validators.towTruckId),
+    towTruckService.unfreezeTowTruck
 );
+
+
 
 // Rate a tow truck — any authenticated role
 router.post(

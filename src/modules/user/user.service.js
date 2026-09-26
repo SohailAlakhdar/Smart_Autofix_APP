@@ -40,7 +40,28 @@ export const getUsers = asyncHandler(async (req, res, next) => {
     return successResponse({ res, data: { users } }); // ✅
 });
 
+// GET /users/:userId  (Admin) — view a single user's details.
+// Mirrors getUsers' decryption step; adjust the "not found" cause code to
+// match how other handlers in this file report 404s if this differs.
+export const getUserDetails = asyncHandler(async (req, res, next) => {
+    const { userId } = req.params;
 
+    const user = await DBService.findById({
+        model: UserModel,
+        id: userId,
+    });
+
+    if (!user) {
+        return next(new Error("User not found", { cause: 404 }));
+    }
+
+    user.phone = await decGenerate({
+        ciphertext: user.phone,
+        secretKey: process.env.ENCRYPTION_SECRET,
+    });
+
+    return successResponse({ res, data: { user } }); // ✅
+});
 
 export const getNewLoginCredentials = asyncHandler(async (req, res, next) => {
     const user = req.user;
@@ -113,11 +134,9 @@ export const changePassword = asyncHandler(async (req, res, next) => {
 
 export const freezeAccount = asyncHandler(async (req, res, next) => {
     // console.log("Freeze Account Request:", req.params, req.body);
-    const userId = req.params.userId || req.user._id;
-    if (
-        req.user._id.toString() !== userId.toString() &&
-        req.user.role !== roleEnum.admin
-    ) {
+    // Spec update: users cannot freeze their own account — Admin only.
+    const userId = req.params.userId;
+    if (req.user.role !== roleEnum.admin) {
         return next(
             new Error("You are not authorized to freeze this account", {
                 cause: 403,
@@ -127,7 +146,7 @@ export const freezeAccount = asyncHandler(async (req, res, next) => {
 
     const user = await DBService.findOneAndUpdate({
         model: UserModel,
-        filter: { _id: userId || req.user._id, deletedAt: { $exists: false } },
+        filter: { _id: userId, deletedAt: { $exists: false } },
         update: {
             $set: {
                 freezedAt: new Date(),
@@ -176,9 +195,15 @@ export const restoreAccount = asyncHandler(async (req, res, next) => {
         model: UserModel,
         filter: { _id: userId, freezedAt: { $exists: true } },
         update: {
+            // FIX: restoredAt/restoredBy were previously inside $unset, which
+            // ignores assigned values and just deletes the field — they were
+            // never actually being set. Freeze fields are unset here; restore
+            // fields are set separately.
             $unset: {
                 freezedAt: 1,
                 freezedBy: 1,
+            },
+            $set: {
                 restoredAt: new Date(),
                 restoredBy: req.user._id,
             },
@@ -222,5 +247,42 @@ export const profileImage = asyncHandler(async (req, res, next) => {
     // console.log(user);
     return successResponse({ res, data: { user } }); // ✅
 });
-// ------------------------
 
+export const verifyOtp = asyncHandler(async (req, res, next) => {
+    const { phone, otp } = req.body;
+
+    const user = await userDBService.findOne({ filter: { phone } });
+    if (!user || !user.otp) {
+        return next(new AppError("Invalid phone number or OTP", 400));
+    }
+    if (user.otpExpiresAt < new Date()) {
+        return next(new AppError("OTP has expired", 400));
+    }
+    if (!compareHash({ plaintext: otp, hashValue: user.otp })) {
+        return next(new AppError("Invalid OTP", 400));
+    }
+
+    await userDBService.updateOne({
+        filter: { _id: user._id },
+        data: {
+            confirmedAt: new Date(),
+            $unset: { otp: "", otpExpiresAt: "" },
+        },
+    });
+
+    const accessToken = generateToken({
+        payload: { id: user._id },
+        tokenType: tokenTypeEnum.access,
+    });
+    const refreshToken = generateToken({
+        payload: { id: user._id },
+        tokenType: tokenTypeEnum.refresh,
+    });
+
+    return successResponse({
+        res,
+        message: "Phone verified successfully",
+        data: { accessToken, refreshToken },
+    });
+});
+// ------------------------

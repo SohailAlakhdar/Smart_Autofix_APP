@@ -1,11 +1,15 @@
-import { rateableTypeEnum, RatingModel } from "../../DB/models/rate.model.js";
+import { rateableTypeEnum, RatingModel } from "../../DB/models/Rate.model.js";
 import { ServiceCenterModel } from "../../DB/models/ServiceCenter.model.js";
 
 // GET /service-centers  (Public)
 export const listServiceCenters = async (req, res) => {
     const { city, specialty, page = 1, limit = 20 } = req.query;
 
-    const filter = { freezedBy: null };
+    // Frozen status is defined by freezedAt (section 14), not freezedBy —
+    // checking freezedBy here could keep hiding a center that was already
+    // unfrozen if an unfreeze operation ever clears freezedAt but leaves
+    // freezedBy set.
+    const filter = { freezedAt: null };
     if (city) filter["location.city"] = { $regex: city, $options: "i" };
     if (specialty) filter.specialties = { $in: [specialty] };
 
@@ -29,11 +33,12 @@ export const listServiceCenters = async (req, res) => {
     });
 };
 
-// GET /service-centers/nearby  (Private — any authenticated role)
+// GET /service-centers/nearby  (Public — no login/fault/image required, per spec 15/24/28)
 export const nearbyServiceCenters = async (req, res) => {
     const { lat, lng, maxDistanceKm = 10, limit = 5, specialty } = req.query;
 
     const filter = {
+        freezedAt: null,
         location: {
             $near: {
                 $geometry: { type: "Point", coordinates: [Number(lng), Number(lat)] },
@@ -60,13 +65,16 @@ export const nearbyServiceCenters = async (req, res) => {
 
 // GET /service-centers/:id  (Public)
 export const getServiceCenter = async (req, res) => {
-    const center = await ServiceCenterModel.findOne({ _id: req.params.id, freezedBy: null });
+    const center = await ServiceCenterModel.findOne({ _id: req.params.id, freezedAt: null });
 
     if (!center) {
         return res.status(404).json({ success: false, message: "Service center not found" });
     }
 
-    return res.json({ success: true, data: center });
+    return res.json({
+        success: true,
+        data: { ...center.toObject(), ratingsPercentBreakdown: percentBreakdown(center) },
+    });
 };
 
 // POST /service-centers  (Admin)
@@ -93,7 +101,7 @@ export const updateServiceCenter = async (req, res) => {
     }
 
     const center = await ServiceCenterModel.findOneAndUpdate(
-        { _id: req.params.id, freezedBy: null },
+        { _id: req.params.id, freezedAt: null },
         updates,
         { new: true, runValidators: true }
     );
@@ -105,12 +113,15 @@ export const updateServiceCenter = async (req, res) => {
     return res.json({ success: true, data: center });
 };
 
-// DELETE /service-centers/:id  (Admin) — soft delete via freezedBy
+// DELETE /service-centers/:id  (Admin) — soft delete via freezedAt/freezedBy
+// FIX: freezedAt and freezedBy must be in the same update object. The
+// original code passed { freezedAt: new Date() } as the OPTIONS argument
+// (3rd positional param of findByIdAndUpdate), which Mongoose ignores —
+// freezedAt was never actually being persisted.
 export const deleteServiceCenter = async (req, res) => {
     const center = await ServiceCenterModel.findByIdAndUpdate(
         req.params.id,
-        { freezedBy: req.user._id },
-        { freezedAt: new Date() },
+        { freezedBy: req.user._id, freezedAt: new Date() },
         { new: true }
     );
 
@@ -121,6 +132,21 @@ export const deleteServiceCenter = async (req, res) => {
     return res.json({ success: true, message: "Service center frozen", data: center });
 };
 
+// PATCH /service-centers/:id/unfreeze  (Admin) — was missing entirely;
+// section 22 lists Unfreeze alongside Freeze for Service Centers.
+export const unfreezeServiceCenter = async (req, res) => {
+    const center = await ServiceCenterModel.findByIdAndUpdate(
+        req.params.id,
+        { freezedBy: null, freezedAt: null },
+        { new: true }
+    );
+
+    if (!center) {
+        return res.status(404).json({ success: false, message: "Service center not found" });
+    }
+
+    return res.json({ success: true, message: "Service center unfrozen", data: center });
+};
 
 //  POST /service-centers/:id/rate  (Private)
 export const rateServiceCenter = async (req, res) => {
@@ -159,16 +185,14 @@ export const rateServiceCenter = async (req, res) => {
 
     return res.json({
         success: true,
-        data: {
-            ...center.toObject(),
-        },
+        data: { ...center.toObject(), ratingsPercentBreakdown: percentBreakdown(center) },
     });
 };
 
 function percentBreakdown(center) {
     const total = center.ratingsCount;
     return Object.fromEntries(
-        Object.entries(center.ratingsBreakdown).map(([star, count]) => [
+        Object.entries(center.ratingsBreakdown ?? {}).map(([star, count]) => [
             star,
             total ? Math.round((count / total) * 100) : 0,
         ])

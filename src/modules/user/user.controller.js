@@ -7,9 +7,9 @@ import { roleEnum } from "../../DB/models/User.model.js";
 import * as validators from "./user.validation.js";
 import { validation } from "../../middlewares/validation.middleware.js";
 import { fileValidation } from "../../utils/multer/local.multer.js";
-import { cloudeFieldUpload } from "../../utils/multer/cloude.multer.js";
+import { cloudeFieldUpload } from "../../utils/multer/cloud.multer.js";
 
-// Get user ID
+// Get own profile
 router.get(
     "/",
     auth({
@@ -19,16 +19,26 @@ router.get(
     userService.getUserId
 );
 
+// List all users — ADMIN ONLY
 router.get(
     "/users",
     auth({
         tokenType: tokenTypeEnum.access,
-        accessRoles: Object.values(roleEnum),
+        accessRoles: [roleEnum.admin],
     }),
     userService.getUsers
 );
 
-
+// View a single user's details — ADMIN ONLY
+router.get(
+    "/users/:userId",
+    auth({
+        tokenType: tokenTypeEnum.access,
+        accessRoles: [roleEnum.admin],
+    }),
+    validation(validators.userId),
+    userService.getUserDetails
+);
 
 // Update basic profile
 router.patch(
@@ -54,23 +64,36 @@ router.patch(
     validation(validators.updatePassword),
     userService.changePassword
 );
-// freeze account
+
+// freeze account — ADMIN ONLY. Users cannot freeze their own account.
 router.delete(
     "/freeze-account/:userId",
-    authentication(),
+    auth({
+        tokenType: tokenTypeEnum.access,
+        accessRoles: [roleEnum.admin],
+    }),
     validation(validators.freezeAccount),
     userService.freezeAccount
 );
+
+// unfreeze account — ADMIN ONLY
 router.patch(
-    "/restore-account/:userId",
-    authentication(),
-    validation(validators.restoreAccount),
+    "/unfreeze-account/:userId",
+    auth({
+        tokenType: tokenTypeEnum.access,
+        accessRoles: [roleEnum.admin],
+    }),
+    validation(validators.freezeAccount),
     userService.restoreAccount
 );
-// delete account
+
+// delete account — ADMIN ONLY. Users cannot delete their own account.
 router.delete(
     "/delete-account/:userId",
-    authentication(),
+    auth({
+        tokenType: tokenTypeEnum.access,
+        accessRoles: [roleEnum.admin],
+    }),
     validation(validators.deleteAccount),
     userService.deleteAccount
 );
