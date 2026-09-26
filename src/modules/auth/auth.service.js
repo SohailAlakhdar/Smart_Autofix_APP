@@ -6,7 +6,7 @@ import {
     tokenTypeEnum,
 } from "../../utils/security/token.security.js";
 import { generateOtp } from "../../utils/security/otp.security.js";
-import { sendSms } from "../../utils/sms/sms.service.js";
+// import { sendSms } from "../../utils/sms/sms.service.js";
 import { globalErrorHandling as AppError, asyncHandler, successResponse } from "../../utils/response.js";
 
 // How long a signup OTP / password-reset OTP stays valid
