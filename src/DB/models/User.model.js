@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 
-export const roleEnum = { user: "USER", admin: "ADMIN" };
+export const roleEnum = { user: "User", admin: "Admin" };
 
 const userSchema = new mongoose.Schema(
     {
@@ -22,7 +22,6 @@ const userSchema = new mongoose.Schema(
         password: {
             type: String,
             required: [true, "Password is required"],
-            select: false, // never returned unless explicitly requested
         },
         role: {
             type: String,

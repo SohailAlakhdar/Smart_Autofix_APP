@@ -46,10 +46,9 @@ const bootstrap = async () => {
     app.all("/*dummy", (req, res, next) => {
         res.status(404).json({ message: "In-valid app routing" });
     });
+
+    
     app.use(globalErrorHandling);
-    console.log("MAIL_HOST:", process.env.MAIL_HOST);
-    console.log("MAIL_PORT:", process.env.MAIL_PORT);
-    console.log("MAIL_USER:", process.env.MAIL_USER);
     app.listen(port, () =>
         console.log(`Smart Autofix App is listening on port localhost:${port} ! 🪷`)
     );

@@ -19,7 +19,7 @@ router.get(
     userService.getUserId
 );
 
-// List all users — ADMIN ONLY
+// List all users — Admin ONLY
 router.get(
     "/users",
     auth({
@@ -29,7 +29,7 @@ router.get(
     userService.getUsers
 );
 
-// View a single user's details — ADMIN ONLY
+// View a single user's details — Admin ONLY
 router.get(
     "/users/:userId",
     auth({

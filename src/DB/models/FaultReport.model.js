@@ -53,7 +53,7 @@ const faultReportSchema = new mongoose.Schema(
         },
         aiResult: {
             faultName: String,
-            difficulty: { type: String, enum: [DifficultyEnum.easy, DifficultyEnum.hard] },
+            difficulty: { type: String, enum: [DifficultyEnum.easy,DifficultyEnum.medium, DifficultyEnum.hard] },
             requiredTools: [String],
             steps: [String],
             safetyTips: [String],

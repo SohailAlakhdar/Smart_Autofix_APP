@@ -20,7 +20,6 @@ export const authentication = ({ tokenType = tokenTypeEnum.access } = {}) => {
 
 export const authorization = ({ accessRoles = [] } = {}) => {
     return asyncHandler(async (req, res, next) => {
-        // console.log(accessRoles, req.user.role);
         if (!accessRoles.includes(req.user.role)) {
             return next(
                 new Error("You are not authorized to access this resource", {

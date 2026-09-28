@@ -1,7 +1,7 @@
 import { Router } from "express";
 const router = Router();
 
-import { auth } from "../../middlewares/auth.middlewares.js";
+import { auth, authorization } from "../../middlewares/auth.middlewares.js";
 import { tokenTypeEnum } from "../../utils/security/token.security.js";
 import { deleteFault, diagnoseFault, getAllFaults, getCommonFaultStats, getFaultById, getFaultHistory, submitFeedback } from "./fault.service.js";
 import { validation } from "../../middlewares/validation.middleware.js";
@@ -10,11 +10,14 @@ import { cloudeFieldUpload } from "../../utils/multer/cloud.multer.js";
 import { roleEnum } from "../../DB/models/User.model.js";
 
 // All fault routes require a logged-in, non-frozen user
-router.use(auth(tokenTypeEnum.access, [roleEnum.user, roleEnum.admin]));
+// router.use(auth(tokenTypeEnum.access, [roleEnum.user, roleEnum.admin]));
+router.use(auth({ accessRoles: [roleEnum.user, roleEnum.admin] }));
 
 // Admin-only routes (must be declared BEFORE "/:id" to avoid route collision)
-router.get("/stats/common", auth(tokenTypeEnum.access, ["Admin"]), getCommonFaultStats);
-router.get("/", auth(tokenTypeEnum.access, ["Admin"]), getAllFaults);
+// router.get("/stats/common", auth(tokenTypeEnum.access, ["Admin"]), getCommonFaultStats);
+// router.get("/", auth(tokenTypeEnum.access, ["Admin"]), getAllFaults);
+router.get("/stats/common", authorization({ accessRoles: [roleEnum.admin] }), getCommonFaultStats);
+router.get("/", authorization({ accessRoles: [roleEnum.admin] }), getAllFaults);
 
 // User routes
 router.post("/diagnose",

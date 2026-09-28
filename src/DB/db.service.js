@@ -73,3 +73,11 @@ export const findManyAndUpdate = async ({
     // If not returning updated docs, return update result only
     return { acknowledged: true, updated: true };
 };
+export const find = async ({
+    model,
+    filter = {},
+    select = "",
+    options = {},
+} = {}) => {
+    return await model.find(filter).select(select).setOptions(options);
+};

@@ -20,7 +20,7 @@ router.post(
 
 // Refresh — exchange a valid refresh token for a new access token
 router.post(
-    "/refresh",
+    "/refresh-token",
     validation(validators.refreshToken),
     authService.refreshToken
 );

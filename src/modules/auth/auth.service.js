@@ -4,6 +4,8 @@ import {
     generateToken,
     verifyToken,
     tokenTypeEnum,
+    getSignatures,
+    signatureLevelEnum,
 } from "../../utils/security/token.security.js";
 import { generateOtp } from "../../utils/security/otp.security.js";
 
@@ -88,8 +90,7 @@ export const login = asyncHandler(async (req, res) => {
 /* ------------------------------------------------------------------ */
 export const refreshToken = asyncHandler(async (req, res) => {
     const { refreshToken: token } = req.body;
-
-    const decoded = verifyToken({ token, tokenType: tokenTypeEnum.refresh });
+    const decoded = await verifyToken({ token, tokenType: tokenTypeEnum.refresh });
     if (!decoded?.id) {
         throw appError("Invalid refresh token", 401);
     }
@@ -99,7 +100,7 @@ export const refreshToken = asyncHandler(async (req, res) => {
         throw appError("Account not found or frozen", 401);
     }
 
-    const accessToken = generateToken({
+    const accessToken = await generateToken({
         payload: { id: user._id },
         tokenType: tokenTypeEnum.access,
     });

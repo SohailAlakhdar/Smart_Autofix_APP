@@ -20,23 +20,23 @@ export const getUserId = asyncHandler(async (req, res, next) => {
         model: UserModel,
         id: req.user._id
     });
-    req.user.phone = await decGenerate({
-        ciphertext: req.user.phone,
-        secretKey: process.env.ENCRYPTION_SECRET,
-    });
+    // req.user.phone = await decGenerate({
+    //     ciphertext: req.user.phone,
+    //     secretKey: process.env.ENCRYPTION_SECRET,
+    // });
     return successResponse({ res, data: { user } }); // ✅
 });
 export const getUsers = asyncHandler(async (req, res, next) => {
     const users = await DBService.find({
         model: UserModel,
-        filter: { freezedBy: { $exists: false } }
+        filter: { freezedAt: { $exists: false } }
     });
-    for (const user of users) {
-        user.phone = await decGenerate({
-            ciphertext: user.phone,
-            secretKey: process.env.ENCRYPTION_SECRET,
-        });
-    }
+    // for (const user of users) {
+    //     user.phone = await decGenerate({
+    //         ciphertext: user.phone,
+    //         secretKey: process.env.ENCRYPTION_SECRET,
+    //     });
+    // }
     return successResponse({ res, data: { users } }); // ✅
 });
 
@@ -55,10 +55,10 @@ export const getUserDetails = asyncHandler(async (req, res, next) => {
         return next(new Error("User not found", { cause: 404 }));
     }
 
-    user.phone = await decGenerate({
-        ciphertext: user.phone,
-        secretKey: process.env.ENCRYPTION_SECRET,
-    });
+    // user.phone = await decGenerate({
+    //     ciphertext: user.phone,
+    //     secretKey: process.env.ENCRYPTION_SECRET,
+    // });
 
     return successResponse({ res, data: { user } }); // ✅
 });
@@ -103,14 +103,12 @@ export const updateBasicProfile = asyncHandler(async (req, res, next) => {
 });
 
 export const changePassword = asyncHandler(async (req, res, next) => {
-    // console.log("Update Password Request:", req.params, req.body);
-    const { password, oldPassword, confirmPassword } = req.body;
-    if (
-        !compareHash({
-            plaintext: oldPassword,
-            hashValue: req.user.password,
-        })
-    ) {
+    const { oldPassword, password, confirmPassword } = req.body;
+    const matches = await compareHash({
+        plaintext: oldPassword,
+        hashValue: req.user.password,
+    });
+    if (!matches) {
         return next(new Error("Old password is incorrect", { cause: 400 }));
     }
     if (password !== confirmPassword) {
@@ -248,41 +246,3 @@ export const profileImage = asyncHandler(async (req, res, next) => {
     return successResponse({ res, data: { user } }); // ✅
 });
 
-export const verifyOtp = asyncHandler(async (req, res, next) => {
-    const { phone, otp } = req.body;
-
-    const user = await userDBService.findOne({ filter: { phone } });
-    if (!user || !user.otp) {
-        return next(new AppError("Invalid phone number or OTP", 400));
-    }
-    if (user.otpExpiresAt < new Date()) {
-        return next(new AppError("OTP has expired", 400));
-    }
-    if (!compareHash({ plaintext: otp, hashValue: user.otp })) {
-        return next(new AppError("Invalid OTP", 400));
-    }
-
-    await userDBService.updateOne({
-        filter: { _id: user._id },
-        data: {
-            confirmedAt: new Date(),
-            $unset: { otp: "", otpExpiresAt: "" },
-        },
-    });
-
-    const accessToken = generateToken({
-        payload: { id: user._id },
-        tokenType: tokenTypeEnum.access,
-    });
-    const refreshToken = generateToken({
-        payload: { id: user._id },
-        tokenType: tokenTypeEnum.refresh,
-    });
-
-    return successResponse({
-        res,
-        message: "Phone verified successfully",
-        data: { accessToken, refreshToken },
-    });
-});
-// ------------------------

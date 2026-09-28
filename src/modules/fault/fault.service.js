@@ -6,17 +6,17 @@ import {
 } from "../../utils/multer/cloudinary.js";
 import { uploadFile } from "../../utils/multer/cloudinary.js";
 import { uploadFiles } from "../../utils/multer/cloudinary.js";
-import { findNearestServiceCenter, findNearestTowTruck } from "./fault.prompt.js";
+import { analyzeFault, findNearestServiceCenter, findNearestTowTruck } from "./fault.prompt.js";
 /**
- * POST /api/faults/diagnose
+ * POST /faults/diagnose
  * body: { faultType, faultText?, vehicleInfo? }
  * file: req.file (image, optional - multer)
  */
 export const diagnoseFault = async (req, res, next) => {
     try {
+
         const userId = req.user._id;
         const { faultType, faultText, lng, lat } = req.body;
-
         if (!Object.values(FaultTypeEnum).includes(faultType)) {
             return res.status(400).json({ success: false, message: "Invalid faultType" });
         }
@@ -52,7 +52,7 @@ export const diagnoseFault = async (req, res, next) => {
                 findNearestTowTruck(coords),
             ]);
         }
-
+       
         const faultReport = await FaultReportModel.create({
             userId,
             faultType,
