@@ -31,14 +31,15 @@ const userSchema = new mongoose.Schema(
             required: true,
         },
         location: {
-            type: { type: String, enum: ["Point"], default: "Point" },
+            type: {
+                type: String,
+                enum: ["Point"],
+                required: true,
+                default: "Point",
+            },
             coordinates: {
-                type: [Number], // [longitude, latitude]
-                required: [true, "Location is required"],
-                validate: {
-                    validator: (v) => Array.isArray(v) && v.length === 2,
-                    message: "Location must be [longitude, latitude]",
-                },
+                type: [Number],
+                required: true,
             },
         },
         profilePicture: { secure_url: String, public_id: String },

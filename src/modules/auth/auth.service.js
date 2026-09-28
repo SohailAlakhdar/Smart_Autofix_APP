@@ -15,16 +15,6 @@ const OTP_EXPIRES_IN_MINUTES = 10;
 
 const minutesFromNow = (minutes) => new Date(Date.now() + minutes * 60 * 1000);
 
-// const await issueTokens = (userId) => ({
-//     accessToken: generateToken({
-//         payload: { id: userId },
-//         tokenType: tokenTypeEnum.access,
-//     }),
-//     refreshToken: generateToken({
-//         payload: { id: userId },
-//         tokenType: tokenTypeEnum.refresh,
-//     }),
-// });
 const issueTokens = async (userId) => {
     const [accessToken, refreshToken] = await Promise.all([
         generateToken({
@@ -57,7 +47,7 @@ export const signup = asyncHandler(async (req, res) => {
         phone,
         password: generateHash({ plaintext: password }),
         role: roleEnum.user,
-        location: { type: "Point", coordinates: location }, // [longitude, latitude]
+        location,
     });
 
     return successResponse({

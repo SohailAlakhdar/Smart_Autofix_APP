@@ -4,14 +4,22 @@ import { generalFields } from "../../middlewares/validation.middleware.js";
 const langQuery = joi.object().keys({ lang: generalFields.lang.optional() });
 
 // [longitude, latitude] — GeoJSON order
-const location = joi
-    .array()
-    .ordered(
-        joi.number().min(-180).max(180).required(),
-        joi.number().min(-90).max(90).required()
-    )
-    .required();
+// GeoJSON Point — coordinates are [longitude, latitude]
 
+const location = joi
+    .object({
+        type: joi.string().valid("Point").required(),
+
+        coordinates: joi
+            .array()
+            .ordered(
+                joi.number().min(-180).max(180).required(), // longitude
+                joi.number().min(-90).max(90).required()    // latitude
+            )
+            .length(2)
+            .required(),
+    })
+    .required();
 /* Signup — creates the account and returns tokens */
 export const signup = {
     body: joi
