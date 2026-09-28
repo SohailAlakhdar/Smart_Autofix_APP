@@ -1,16 +1,18 @@
 import mongoose from "mongoose";
-export let FaultTypeEnum = {
+export const FaultTypeEnum = {
     text: "text",
-    image: "image"
-}
+    image: "image",
+    text_image: "text_image",
+};
 export let FaultReportStatusEnum = {
     resolved_by_user: "resolved_by_user",
     needs_technician: "needs_technician",
 }
-export let DifficultyEnum = {
+export const DifficultyEnum = {
     easy: "easy",
-    hard: "hard"
-}
+    medium: "medium",
+    hard: "hard",
+};
 const nearestServiceCenterSchema = new mongoose.Schema(
     {
         refId: { type: mongoose.Schema.Types.ObjectId, ref: 'ServiceCenter' },
@@ -39,7 +41,16 @@ const faultReportSchema = new mongoose.Schema(
             type: String,
             default: null,
         },
-        faultImage: { secure_url: String, public_id: String },       // النص أو رابط الصورة
+        faultImage: {
+            secure_url: {
+                type: String,
+                default: null,
+            },
+            public_id: {
+                type: String,
+                default: null,
+            },
+        },
         aiResult: {
             faultName: String,
             difficulty: { type: String, enum: [DifficultyEnum.easy, DifficultyEnum.hard] },

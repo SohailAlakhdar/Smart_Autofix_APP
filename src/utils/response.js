@@ -16,6 +16,12 @@ export const globalErrorHandling = async (error, req, res, next) => {
         stack: error.stack,
     });
 };
+export const appError = (message, statusCode = 500) => {
+    const error = new Error(message);
+    error.statusCode = statusCode;
+    error.isOperational = true; // expected error, safe to show message to client
+    return error;
+};
 
 export const successResponse = async ({
     res,

@@ -1,72 +1,61 @@
 import mongoose from "mongoose";
-export let genderEnum = { male: "male", female: "female" };
-export let roleEnum = { user: "User", admin: "Admin" };
+
+export const roleEnum = { user: "USER", admin: "ADMIN" };
 
 const userSchema = new mongoose.Schema(
     {
-        name: {
-            type: String,
-            required: [true, "name is mandatory? "],
-        },
+        name: { type: String, required: [true, "Name is required"], trim: true },
         email: {
             type: String,
+            required: [true, "Email is required"],
             unique: true,
+            lowercase: true,
+            trim: true,
+            match: [/^\S+@\S+\.\S+$/, "Invalid email"],
         },
         phone: {
             type: String,
-            required: true,
+            required: [true, "Phone is required"],
+            unique: true,
             trim: true,
         },
         password: {
             type: String,
-            required: true,
-        },
-        confirmPassword: {
-            type: String,
-        },
-        location: {
-            type: {
-                type: String,
-                enum: ['Point'],
-                default: 'Point',
-            },
-            coordinates: {
-                type: [Number], // [longitude, latitude]
-                default: [0, 0],
-            },
+            required: [true, "Password is required"],
+            select: false, // never returned unless explicitly requested
         },
         role: {
             type: String,
-            enum: {
-                values: Object.values(roleEnum),
-            },
+            enum: Object.values(roleEnum),
             default: roleEnum.user,
+            required: true,
         },
-        picture: { secure_url: String, public_id: String },
-        freezedAt: {
-            type: Date,
+        location: {
+            type: { type: String, enum: ["Point"], default: "Point" },
+            coordinates: {
+                type: [Number], // [longitude, latitude]
+                required: [true, "Location is required"],
+                validate: {
+                    validator: (v) => Array.isArray(v) && v.length === 2,
+                    message: "Location must be [longitude, latitude]",
+                },
+            },
         },
-        freezedBy: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "User",
-        },
-        isPhoneVerified: {
-            type: Boolean,
-            default: false
-        },
-        otp: {
-            code: String,
-            expiresAt: Date
-        },
+        profilePicture: { secure_url: String, public_id: String },
 
+        // password reset (2 steps: verify OTP, then set new password)
+        resetPasswordOtpHash: { type: String, select: false },
+        resetPasswordOtpExpiresAt: Date,
+        resetPasswordVerifiedAt: Date,
+
+        freezedAt: { type: Date, default: null },
+        freezedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     },
-    {
-        timestamps: true,
-    }
+    { timestamps: true }
 );
 
+userSchema.index({ location: "2dsphere" });
 
 export const UserModel =
     mongoose.models.User || mongoose.model("User", userSchema);
-UserModel.syncIndexes();
 export default UserModel;

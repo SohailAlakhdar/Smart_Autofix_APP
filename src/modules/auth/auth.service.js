@@ -6,146 +6,107 @@ import {
     tokenTypeEnum,
 } from "../../utils/security/token.security.js";
 import { generateOtp } from "../../utils/security/otp.security.js";
-// import { sendSms } from "../../utils/sms/sms.service.js";
-import { globalErrorHandling as AppError, asyncHandler, successResponse } from "../../utils/response.js";
 
-// How long a signup OTP / password-reset OTP stays valid
+import { appError, asyncHandler, successResponse } from "../../utils/response.js";
+import { sendEmail } from "../../utils/sendOtp.utils.js";
+
+// How long a password-reset OTP stays valid
 const OTP_EXPIRES_IN_MINUTES = 10;
 
-const otpExpiryDate = () =>
-    new Date(Date.now() + OTP_EXPIRES_IN_MINUTES * 60 * 1000);
+const minutesFromNow = (minutes) => new Date(Date.now() + minutes * 60 * 1000);
 
+// const await issueTokens = (userId) => ({
+//     accessToken: generateToken({
+//         payload: { id: userId },
+//         tokenType: tokenTypeEnum.access,
+//     }),
+//     refreshToken: generateToken({
+//         payload: { id: userId },
+//         tokenType: tokenTypeEnum.refresh,
+//     }),
+// });
+const issueTokens = async (userId) => {
+    const [accessToken, refreshToken] = await Promise.all([
+        generateToken({
+            payload: { id: userId },
+            tokenType: tokenTypeEnum.access,
+        }),
+        generateToken({
+            payload: { id: userId },
+            tokenType: tokenTypeEnum.refresh,
+        }),
+    ]);
+
+    return { accessToken, refreshToken };
+};
 /* ------------------------------------------------------------------ */
 /* Signup                                                              */
 /* ------------------------------------------------------------------ */
-export const signup = asyncHandler(async (req, res, next) => {
-    const { phone, password } = req.body;
+export const signup = asyncHandler(async (req, res) => {
+    // role, confirmPassword and picture are never trusted from the body
+    const { name, email, phone, password, location } = req.body;
 
-    const existingUser = await User.findOne({ phone });
-    if (existingUser?.confirmedAt) {
-        return next(new AppError("Phone number already registered", 409));
-    }
-
-    const otp = generateOtp();
-    const hashedOtp = generateHash({ plaintext: otp });
-    const hashedPassword = generateHash({ plaintext: password });
-
+    const existingUser = await User.findOne({ $or: [{ phone }, { email }] });
     if (existingUser) {
-        // Unconfirmed signup already exists — refresh it rather than duplicate
-        await User.updateOne(
-            { _id: existingUser._id },
-            {
-                password: hashedPassword,
-                otp: hashedOtp,
-                otpExpiresAt: otpExpiryDate(),
-            }
-        );
-    } else {
-        await User.create({
-            phone,
-            password: hashedPassword,
-            role: roleEnum.user,
-            otp: hashedOtp,
-            otpExpiresAt: otpExpiryDate(),
-        });
+        throw appError("Phone number or email already registered", 409);
     }
 
-    // await sendSms({
-    //     phone,
-    //     message: `Your Smart Autofix verification code is ${otp}`,
-    // });
-
-    return successResponse({ res, message: "OTP sent successfully" });
-});
-
-/* ------------------------------------------------------------------ */
-/* Verify OTP                                                          */
-/* ------------------------------------------------------------------ */
-export const verifyOtp = asyncHandler(async (req, res, next) => {
-    const { phone, otp } = req.body;
-
-    const user = await User.findOne({ phone });
-    if (!user || !user.otp) {
-        return next(new AppError("Invalid phone number or OTP", 400));
-    }
-    if (user.otpExpiresAt < new Date()) {
-        return next(new AppError("OTP has expired", 400));
-    }
-    if (!compareHash({ plaintext: otp, hashValue: user.otp })) {
-        return next(new AppError("Invalid OTP", 400));
-    }
-
-    await User.updateOne(
-        { _id: user._id },
-        {
-            confirmedAt: new Date(),
-            $unset: { otp: "", otpExpiresAt: "" },
-        }
-    );
-
-    const accessToken = generateToken({
-        payload: { id: user._id },
-        tokenType: tokenTypeEnum.access,
-    });
-    const refreshToken = generateToken({
-        payload: { id: user._id },
-        tokenType: tokenTypeEnum.refresh,
+    const user = await User.create({
+        name,
+        email,
+        phone,
+        password: generateHash({ plaintext: password }),
+        role: roleEnum.user,
+        location: { type: "Point", coordinates: location }, // [longitude, latitude]
     });
 
     return successResponse({
         res,
-        message: "Phone verified successfully",
-        data: { accessToken, refreshToken },
+        status: 201,
+        message: "Account created successfully",
+        data: await issueTokens(user._id),
     });
 });
 
 /* ------------------------------------------------------------------ */
 /* Login                                                                */
 /* ------------------------------------------------------------------ */
-export const login = asyncHandler(async (req, res, next) => {
-    const { phone, password } = req.body;
+export const login = asyncHandler(async (req, res) => {
+    const { email, password } = req.body;
 
-    const user = await User.findOne({ phone });
-    if (!user || !user.confirmedAt) {
-        return next(new AppError("Invalid phone number or password", 401));
+    // password is select:false in the schema, so request it explicitly
+    const user = await User.findOne({ email }).select("+password");
+    if (!user) {
+        throw appError("Invalid email or password", 401);
     }
     if (user.freezedAt) {
-        return next(new AppError("This account has been frozen", 403));
+        throw appError("This account has been frozen", 403);
     }
     if (!compareHash({ plaintext: password, hashValue: user.password })) {
-        return next(new AppError("Invalid phone number or password", 401));
+        throw appError("Invalid email or password", 401);
     }
-
-    const accessToken = generateToken({
-        payload: { id: user._id },
-        tokenType: tokenTypeEnum.access,
-    });
-    const refreshToken = generateToken({
-        payload: { id: user._id },
-        tokenType: tokenTypeEnum.refresh,
-    });
 
     return successResponse({
         res,
         message: "Login successful",
-        data: { accessToken, refreshToken },
+        data: await issueTokens(user._id),
     });
 });
 
 /* ------------------------------------------------------------------ */
 /* Refresh Token                                                        */
 /* ------------------------------------------------------------------ */
-export const refreshToken = asyncHandler(async (req, res, next) => {
+export const refreshToken = asyncHandler(async (req, res) => {
     const { refreshToken: token } = req.body;
 
     const decoded = verifyToken({ token, tokenType: tokenTypeEnum.refresh });
     if (!decoded?.id) {
-        return next(new AppError("Invalid refresh token", 401));
+        throw appError("Invalid refresh token", 401);
     }
 
     const user = await User.findOne({ _id: decoded.id });
     if (!user || user.freezedAt) {
-        return next(new AppError("Account not found or frozen", 401));
+        throw appError("Account not found or frozen", 401);
     }
 
     const accessToken = generateToken({
@@ -157,63 +118,64 @@ export const refreshToken = asyncHandler(async (req, res, next) => {
 });
 
 /* ------------------------------------------------------------------ */
-/* Forgot Password — request a reset code                              */
+/* Forgot Password (step 1) — email a reset code                       */
 /* ------------------------------------------------------------------ */
-export const forgotPassword = asyncHandler(async (req, res, next) => {
-    const { phone } = req.body;
+export const forgotPassword = asyncHandler(async (req, res) => {
+    const { email } = req.body;
 
-    const user = await User.findOne({ phone });
+    const user = await User.findOne({ email });
 
-    // Respond identically whether or not the phone is registered, so the
-    // endpoint can't be used to enumerate valid accounts.
-    if (user && user.confirmedAt && !user.freezedAt) {
+    if (!user) {
+        throw appError("Email not Exits", 401);
+    }
+
+    if (user && !user.freezedAt) {
         const otp = generateOtp();
-        const hashedOtp = generateHash({ plaintext: otp });
 
         await User.updateOne(
             { _id: user._id },
             {
-                passwordResetOtp: hashedOtp,
-                passwordResetOtpExpiresAt: otpExpiryDate(),
+                resetPasswordOtpHash: generateHash({ plaintext: otp }),
+                resetPasswordOtpExpiresAt: minutesFromNow(OTP_EXPIRES_IN_MINUTES),
             }
         );
 
-        // await sendSms({
-        //     phone,
-        //     message: `Your Smart Autofix password reset code is ${otp}`,
-        // });
+        await sendEmail({
+            to: email,
+            subject: "Smart Autofix password reset code",
+            html: `<p>Your password reset code is <b>${otp}</b>. It expires in ${OTP_EXPIRES_IN_MINUTES} minutes.</p>`,
+        });
     }
 
     return successResponse({
         res,
-        message: "If this phone number is registered, a reset code has been sent",
+        message: "The code is sent Successfully",
     });
 });
 
 /* ------------------------------------------------------------------ */
-/* Reset Password — consume the code, set a new password               */
+/* Reset Password (step 2) — verify the code and set the new password  */
 /* ------------------------------------------------------------------ */
-export const resetPassword = asyncHandler(async (req, res, next) => {
-    const { phone, otp, newPassword } = req.body;
+export const resetPassword = asyncHandler(async (req, res) => {
+    const { email, otp, password } = req.body;
 
-    const user = await User.findOne({ phone });
-    if (!user || !user.passwordResetOtp) {
-        return next(new AppError("Invalid phone number or reset code", 400));
+    const user = await User.findOne({ email }).select("+resetPasswordOtpHash");
+    if (!user || !user.resetPasswordOtpHash) {
+        throw appError("Invalid email or reset code", 400);
     }
-    if (user.passwordResetOtpExpiresAt < new Date()) {
-        return next(new AppError("Reset code has expired", 400));
+    if (user.resetPasswordOtpExpiresAt < new Date()) {
+        throw appError("Reset code has expired", 400);
     }
-    if (!compareHash({ plaintext: otp, hashValue: user.passwordResetOtp })) {
-        return next(new AppError("Invalid reset code", 400));
+    if (!compareHash({ plaintext: otp, hashValue: user.resetPasswordOtpHash })) {
+        throw appError("Invalid reset code", 400);
     }
 
-    const hashedPassword = generateHash({ plaintext: newPassword });
-
+    // Set the new password and consume the code so it can't be reused
     await User.updateOne(
         { _id: user._id },
         {
-            password: hashedPassword,
-            $unset: { passwordResetOtp: "", passwordResetOtpExpiresAt: "" },
+            password: generateHash({ plaintext: password }),
+            $unset: { resetPasswordOtpHash: "", resetPasswordOtpExpiresAt: "" },
         }
     );
 

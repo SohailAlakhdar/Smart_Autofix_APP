@@ -29,7 +29,7 @@ export const generalFields = {
     age: joi.number().positive().integer().min(15).max(150),
     phone: joi
         .string()
-        .pattern(/^(002|\+2)?01[0125][0-9]{8}$/)
+        // .pattern(/^(002|\+2)?01[0125][0-9]{8}$/)
         .messages({
             "string.pattern.base":
                 "Phone number must be a valid Egyptian phone number",

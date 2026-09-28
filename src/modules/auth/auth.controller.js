@@ -4,21 +4,14 @@ import * as authService from "./auth.service.js";
 import * as validators from "./auth.validation.js";
 import { validation } from "../../middlewares/validation.middleware.js";
 
-// Signup — phone + password, creates and sends OTP
+// Signup — creates the account, returns access + refresh tokens
 router.post(
     "/signup",
     validation(validators.signup),
     authService.signup
 );
 
-// Verify OTP — activates the user, returns access + refresh tokens
-router.post(
-    "/verify-otp",
-    validation(validators.verifyOtp),
-    authService.verifyOtp
-);
-
-// Login — phone + password, returns access + refresh tokens
+// Login — email + password, returns access + refresh tokens
 router.post(
     "/login",
     validation(validators.login),
@@ -32,14 +25,14 @@ router.post(
     authService.refreshToken
 );
 
-// Forgot password — phone only, sends a reset OTP if the account exists
+// Forgot password (step 1) — email only, emails a reset OTP if the account exists
 router.post(
     "/forgot-password",
     validation(validators.forgotPassword),
     authService.forgotPassword
 );
 
-// Reset password — phone + OTP + new password
+// Reset password (step 2) — email + OTP + password + confirmPassword
 router.post(
     "/reset-password",
     validation(validators.resetPassword),
