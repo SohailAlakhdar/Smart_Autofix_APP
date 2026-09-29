@@ -6,7 +6,8 @@ import {
 } from "../../utils/multer/cloudinary.js";
 import { uploadFile } from "../../utils/multer/cloudinary.js";
 import { uploadFiles } from "../../utils/multer/cloudinary.js";
-import { analyzeFault, findNearestServiceCenter, findNearestTowTruck } from "./fault.prompt.js";
+import { analyzeFault } from "../AI/gemini.service.js";
+import {  findNearestServiceCenter, findNearestTowTruck } from "./fault.prompt.js";
 /**
  * POST /faults/diagnose
  * body: { faultType, faultText?, vehicleInfo? }
@@ -52,7 +53,7 @@ export const diagnoseFault = async (req, res, next) => {
                 findNearestTowTruck(coords),
             ]);
         }
-       
+
         const faultReport = await FaultReportModel.create({
             userId,
             faultType,
@@ -128,10 +129,12 @@ export const deleteFault = async (req, res, next) => {
             return res.status(404).json({ success: false, message: "Fault report not found" });
         }
 
+        // if (fault.faultImage?.public_id) {
+        //     await cloudinary.uploader.destroy(fault.faultImage.public_id);
+        // }
         if (fault.faultImage?.public_id) {
-            await cloudinary.uploader.destroy(fault.faultImage.public_id);
+            await destroyFile(fault.faultImage.public_id);
         }
-
         return res.status(200).json({ success: true, message: "Fault report deleted" });
     } catch (error) {
         next(error);
