@@ -7,7 +7,7 @@ import {
 import { uploadFile } from "../../utils/multer/cloudinary.js";
 import { uploadFiles } from "../../utils/multer/cloudinary.js";
 import { analyzeFault } from "../AI/gemini.service.js";
-import {  findNearestServiceCenter, findNearestTowTruck } from "./fault.prompt.js";
+import { findNearestServiceCenter, findNearestTowTruck } from "./fault.prompt.js";
 /**
  * POST /faults/diagnose
  * body: { faultType, faultText?, vehicleInfo? }
@@ -30,8 +30,9 @@ export const diagnoseFault = async (req, res, next) => {
 
         let faultImage = null;
         if (req.file) {
-            const { secure_url, public_id } = await uploadFile(req.file.path, {
-                folder: `SmartAutofix/faults/${userId}`,
+            const { secure_url, public_id } = await uploadFile({
+                file: req.file,
+                path: `faults/${userId}`,
             });
             faultImage = { secure_url, public_id };
         }
