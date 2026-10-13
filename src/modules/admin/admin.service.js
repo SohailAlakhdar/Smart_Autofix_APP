@@ -35,24 +35,24 @@ export const getDashboard = async (req, res) => {
     ] = await Promise.all([
         UserModel.countDocuments({ role: roleEnum.user }),
         UserModel.countDocuments({ role: roleEnum.user, freezedAt: { $ne: null } }),
-        ServiceCenterModel.countDocuments({}),
-        ServiceCenterModel.countDocuments({ freezedAt: { $ne: null } }),
+        ServiceCenterModel.countDocuments({}).setOptions({ includeFrozen: true }),
+        ServiceCenterModel.countDocuments({ freezedAt: { $ne: null } }).setOptions({ includeFrozen: true }),
         TowTruckModel.countDocuments({}),
         TowTruckModel.countDocuments({ freezedAt: { $ne: null } }),
         TowTruckModel.countDocuments({ isAvailable: true }),
         FaultReportModel.countDocuments({}),
-        FaultReportModel.countDocuments({ difficulty: "easy" }),
-        FaultReportModel.countDocuments({ difficulty: "medium" }),
-        FaultReportModel.countDocuments({ difficulty: "hard" }),
+        FaultReportModel.countDocuments({ "aiResult.difficulty": "easy" }),
+        FaultReportModel.countDocuments({ "aiResult.difficulty": "medium" }),
+        FaultReportModel.countDocuments({ "aiResult.difficulty": "hard" }),
         RatingModel.countDocuments({}),
         UserModel.find({ role: roleEnum.user })
             .select("-password")
             .sort({ createdAt: -1 })
             .limit(limit),
-        ServiceCenterModel.find({}).sort({ createdAt: -1 }).limit(limit),
+        ServiceCenterModel.find({}).setOptions({ includeFrozen: true }).sort({ createdAt: -1 }).limit(limit),
         TowTruckModel.find({}).sort({ createdAt: -1 }).limit(limit),
         FaultReportModel.find({})
-            .populate("user", "name email")
+            .populate("userId", "name email")
             .sort({ createdAt: -1 })
             .limit(limit),
         RatingModel.find({}).sort({ createdAt: -1 }).limit(limit),

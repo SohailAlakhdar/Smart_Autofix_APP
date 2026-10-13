@@ -49,13 +49,11 @@ serviceCenterSchema.index({ location: '2dsphere' });
 
 // Matches find, findOne, findOneAndUpdate, findOneAndDelete, countDocuments, etc.
 serviceCenterSchema.pre(/^find/, function (next) {
-
   if (!this.getOptions().includeFrozen) {
-    this.where({ freezedAt: { $exists: false } });
+    this.where({ $or: [{ freezedAt: null }, { freezedAt: { $exists: false } }] });
   }
   next();
 });
 
 export const ServiceCenterModel =
   mongoose.models.ServiceCenter || mongoose.model("ServiceCenter", serviceCenterSchema);
-ServiceCenterModel.syncIndexes();

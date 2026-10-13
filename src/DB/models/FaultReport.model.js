@@ -7,7 +7,8 @@ export const FaultTypeEnum = {
 export let FaultReportStatusEnum = {
     resolved_by_user: "resolved_by_user",
     needs_technician: "needs_technician",
-}
+    pending: "pending",
+};
 export const DifficultyEnum = {
     easy: "easy",
     medium: "medium",
@@ -86,8 +87,5 @@ const faultReportSchema = new mongoose.Schema(
 );
 
 faultReportSchema.index({ userId: 1, createdAt: -1 });
-faultReportSchema.index({ location: '2dsphere' });
-
 export const FaultReportModel =
     mongoose.models.FaultReport || mongoose.model("FaultReport", faultReportSchema);
-FaultReportModel.syncIndexes();

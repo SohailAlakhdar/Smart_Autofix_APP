@@ -122,7 +122,7 @@ export const deleteServiceCenter = async (req, res) => {
     const center = await ServiceCenterModel.findByIdAndUpdate(
         req.params.id,
         { freezedBy: req.user._id, freezedAt: new Date() },
-        { new: true }
+        { new: true, includeFrozen: true }
     );
 
     if (!center) {
@@ -138,7 +138,7 @@ export const unfreezeServiceCenter = async (req, res) => {
     const center = await ServiceCenterModel.findByIdAndUpdate(
         req.params.id,
         { freezedBy: null, freezedAt: null },
-        { new: true }
+        { new: true, includeFrozen: true }
     );
 
     if (!center) {

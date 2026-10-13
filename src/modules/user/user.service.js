@@ -29,14 +29,8 @@ export const getUserId = asyncHandler(async (req, res, next) => {
 export const getUsers = asyncHandler(async (req, res, next) => {
     const users = await DBService.find({
         model: UserModel,
-        filter: { freezedAt: { $exists: false } }
+        filter: { $or: [{ freezedAt: null }, { freezedAt: { $exists: false } }] }
     });
-    // for (const user of users) {
-    //     user.phone = await decGenerate({
-    //         ciphertext: user.phone,
-    //         secretKey: process.env.ENCRYPTION_SECRET,
-    //     });
-    // }
     return successResponse({ res, data: { users } }); // ✅
 });
 
@@ -55,23 +49,13 @@ export const getUserDetails = asyncHandler(async (req, res, next) => {
         return next(new Error("User not found", { cause: 404 }));
     }
 
-    // user.phone = await decGenerate({
-    //     ciphertext: user.phone,
-    //     secretKey: process.env.ENCRYPTION_SECRET,
-    // });
-
     return successResponse({ res, data: { user } }); // ✅
 });
 
 export const getNewLoginCredentials = asyncHandler(async (req, res, next) => {
     const user = req.user;
-    const credentials = generateLoginCredentials({
+    const credentials = await generateLoginCredentials({
         user,
-        signatures,
-    });
-    req.user.phone = await decGenerate({
-        ciphertext: req.user.phone,
-        secretKey: process.env.ENCRYPTION_SECRET,
     });
     return successResponse({
         res,
@@ -80,14 +64,6 @@ export const getNewLoginCredentials = asyncHandler(async (req, res, next) => {
 });
 
 export const updateBasicProfile = asyncHandler(async (req, res, next) => {
-    // console.log("Find One And Update Request:", req.params, req.body);
-
-    if (req.body.phone) {
-        req.body.phone = await encGenerate({
-            plaintext: req.body.phone,
-            secretKey: process.env.ENCRYPTION_SECRET,
-        });
-    }
     const user = await DBService.findOneAndUpdate({
         model: UserModel,
         filter: { _id: req.user._id },
@@ -233,14 +209,16 @@ export const profileImage = asyncHandler(async (req, res, next) => {
             _id: req.user._id,
         },
         update: {
+            profilePicture: { secure_url, public_id },
             picture: { secure_url, public_id },
         },
         options: {
             new: false,
         },
     });
-    if (user?.picture?.public_id) {
-        await destroyFile({ public_id: user.picture.public_id });
+    const oldPublicId = user?.profilePicture?.public_id || user?.picture?.public_id;
+    if (oldPublicId) {
+        await destroyFile({ public_id: oldPublicId });
     }
     // console.log(user);
     return successResponse({ res, data: { user } }); // ✅

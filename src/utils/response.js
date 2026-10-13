@@ -10,10 +10,19 @@ export const asyncHandler = (fn) => {
     };
 };
 export const globalErrorHandling = async (error, req, res, next) => {
-    return res.status(error.cause || 400).json({
-        error,
+    const statusCode =
+        typeof error.cause === "number"
+            ? error.cause
+            : typeof error.statusCode === "number"
+            ? error.statusCode
+            : typeof error.status === "number"
+            ? error.status
+            : 400;
+
+    return res.status(statusCode).json({
+        error: process.env.NODE_ENV === "production" ? undefined : error,
         message: error.message,
-        stack: error.stack,
+        stack: process.env.NODE_ENV === "production" ? undefined : error.stack,
     });
 };
 export const appError = (message, statusCode = 500) => {

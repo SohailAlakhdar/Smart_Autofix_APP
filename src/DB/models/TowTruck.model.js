@@ -37,4 +37,3 @@ towTruckSchema.index({ location: '2dsphere' });
 
 export const TowTruckModel =
   mongoose.models.TowTruck || mongoose.model("TowTruck", towTruckSchema);
-TowTruckModel.syncIndexes();

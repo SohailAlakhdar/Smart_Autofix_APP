@@ -1,10 +1,8 @@
-const MODEL = process.env.GEMINI_MODEL || "gemini-flash-latest";
+const MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
 const ENDPOINT = (model) =>
     `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
 
-
-
-const FALLBACK_MODEL = process.env.GEMINI_FALLBACK_MODEL || "gemini-3.5-flash-lite";
+const FALLBACK_MODEL = process.env.GEMINI_FALLBACK_MODEL || "gemini-2.5-flash";
 const RETRYABLE = [429, 500, 503];
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 

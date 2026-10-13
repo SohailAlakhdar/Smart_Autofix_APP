@@ -12,20 +12,27 @@ import faultController from "./modules/fault/fault.controller.js";
 import adminController from "./modules/admin/admin.controller.js";
 import { connectDB } from "./DB/connection.db.js";
 import { globalErrorHandling } from "./utils/response.js";
-// import cors from "cors";
+import cors from "cors";
 import morgan from "morgan";
 import helmet from "helmet";
 import { rateLimit } from "express-rate-limit";
 
-const bootstrap = async () => {
+const bootstrap = async (customPort) => {
     const app = express();
-    const port = process.env.PORT || 5000;
+    const port = customPort || process.env.PORT || 5000;
     app.use(express.json());
-    // console.log(mongoose.modelNames());
+
+    // CORS
+     app.use(
+    cors({
+      origin: process.env.CORS_ORIGIN.split(',').map((origin) => origin.trim()),
+      credentials: true,
+    })
+  );
 
     // limiter
     const limiter = rateLimit({
-        windowMs: 15 * 60 * 1000, // 2 minutes
+        windowMs: 15 * 60 * 1000,
         max: 100,
         message: "Too many requests from this IP, please try again later",
     });
@@ -35,6 +42,7 @@ const bootstrap = async () => {
     app.use(helmet()); // to avoid man in the middle
     app.use(morgan("dev"));
     app.use("/uploads", express.static(path.resolve("./src/uploads")));
+
     // app routing
     app.use("/service-centers", serviceCenterController);
     app.use("/tow-trucks", towTruckController);
@@ -42,15 +50,26 @@ const bootstrap = async () => {
     app.use("/user", userController);
     app.use("/fault", faultController);
     app.use("/admin", adminController);
+
+    // /api aliases for Flutter / Postman specs compliance
+    app.use("/api/service-centers", serviceCenterController);
+    app.use("/api/tow-trucks", towTruckController);
+    app.use("/api/auth", authController);
+    app.use("/api/users", userController);
+    app.use("/api/user", userController);
+    app.use("/api/faults", faultController);
+    app.use("/api/fault", faultController);
+    app.use("/api/admin", adminController);
+
     app.get("/", (req, res) => res.send("Hello World!"));
     app.all("/*dummy", (req, res, next) => {
         res.status(404).json({ message: "In-valid app routing" });
     });
 
-    
     app.use(globalErrorHandling);
-    app.listen(port, () =>
+    const server = app.listen(port, () =>
         console.log(`Smart Autofix App is listening on port localhost:${port} ! 🪷`)
     );
+    return { app, server };
 };
 export default bootstrap;

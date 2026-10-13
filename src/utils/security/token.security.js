@@ -29,8 +29,14 @@ export const getSignatures = ({
 } = {}) => {
     if (signatureLevel === signatureLevelEnum.system) {
         return {
-            accessSignature: process.env.ACCESS_TOKEN_SYSTEM_SIGNATURE,
-            refreshSignature: process.env.REFRESH_TOKEN_SYSTEM_SIGNATURE,
+            accessSignature:
+                process.env.ACCESS_TOKEN_SYSTEM_SIGNATURE ||
+                process.env.ACCESS_TOKEN_ADMIN_SIGNATURE ||
+                process.env.ACCESS_TOKEN_USER_SIGNATURE,
+            refreshSignature:
+                process.env.REFRESH_TOKEN_SYSTEM_SIGNATURE ||
+                process.env.REFRESH_TOKEN_ADMIN_SIGNATURE ||
+                process.env.REFRESH_TOKEN_USER_SIGNATURE,
         };
     }
     // default to user‑level tokens
@@ -46,13 +52,13 @@ export const decodedToken = async ({
     tokenType = tokenTypeEnum.access,
 } = {}) => {
     if (!authorization) {
-        return next(
-            new Error("Authorization header is required", { cause: 401 })
-        );
+        next(new Error("Authorization header is required", { cause: 401 }));
+        return { user: null, decoded: null };
     }
     const [scheme, token] = authorization?.split(" ") || [];
     if (!scheme || !token) {
-        return next(new Error("missing token parts", { cause: 401 }));
+        next(new Error("missing token parts", { cause: 401 }));
+        return { user: null, decoded: null };
     }
     const normalizedScheme =
         scheme.toLowerCase() === "system"
@@ -60,46 +66,58 @@ export const decodedToken = async ({
             : signatureLevelEnum.bearer;
 
     let signatures = getSignatures({ signatureLevel: normalizedScheme });
-    const decoded = await verifyToken({
-        token,
-        signature:
-            tokenType === tokenTypeEnum.access
-                ? signatures.accessSignature
-                : signatures.refreshSignature,
-    });
-    // if (
-    //     await DBService.findOne({
-    //         model: RevokeTokenModel,
-    //         filter: { idToken: decoded.jti },
-    //     })
-    // ) {
-    //     return next(new Error("User have sign out from this device!", { cause: 401 }));
-    // }
+    const targetSignature =
+        tokenType === tokenTypeEnum.access
+            ? signatures.accessSignature
+            : signatures.refreshSignature;
+
+    let decoded;
+    try {
+        decoded = await verifyToken({
+            token,
+            signature: targetSignature,
+        });
+    } catch (err) {
+        // Fallback: try alternate signature (user vs admin/system)
+        try {
+            const fallbackSignatures = getSignatures({
+                signatureLevel:
+                    normalizedScheme === signatureLevelEnum.system
+                        ? signatureLevelEnum.bearer
+                        : signatureLevelEnum.system,
+            });
+            const fallbackSig =
+                tokenType === tokenTypeEnum.access
+                    ? fallbackSignatures.accessSignature
+                    : fallbackSignatures.refreshSignature;
+            decoded = await verifyToken({ token, signature: fallbackSig });
+        } catch {
+            next(new Error("Invalid or expired token", { cause: 401 }));
+            return { user: null, decoded: null };
+        }
+    }
+
     const user = await DBService.findById({
         model: UserModel,
         id: decoded.id,
     });
 
     if (!user) {
-        return next(new Error("Not register account", { cause: 404 }));
+        next(new Error("Not register account", { cause: 404 }));
+        return { user: null, decoded: null };
     }
     if (
         user.changeLoginCredentials &&
         decoded.iat <
-            // Math.floor(new Date("2025-08-03T04:08:27.920Z").getTime() / 1000)
             Math.floor(new Date(user.changeLoginCredentials).getTime() / 1000)
     ) {
-        return next(new Error("Old signature token", { cause: 401 }));
-    }
-    if (scheme.toLowerCase() === "bearer" && user.role === roleEnum.admin) {
-        return next(new Error("Admins must use System token", { cause: 403 }));
+        next(new Error("Old signature token", { cause: 401 }));
+        return { user: null, decoded: null };
     }
     if (scheme.toLowerCase() === "system" && user.role !== roleEnum.admin) {
-        return next(
-            new Error("Only admins can use System token", { cause: 403 })
-        );
+        next(new Error("Only admins can use System token", { cause: 403 }));
+        return { user: null, decoded: null };
     }
-    // console.log("Decoded without verify:", jwt.decode(token));
     return { user, decoded };
 };
 

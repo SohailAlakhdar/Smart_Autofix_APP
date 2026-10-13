@@ -134,7 +134,7 @@ export const deleteFault = async (req, res, next) => {
         //     await cloudinary.uploader.destroy(fault.faultImage.public_id);
         // }
         if (fault.faultImage?.public_id) {
-            await destroyFile(fault.faultImage.public_id);
+            await destroyFile({ public_id: fault.faultImage.public_id });
         }
         return res.status(200).json({ success: true, message: "Fault report deleted" });
     } catch (error) {

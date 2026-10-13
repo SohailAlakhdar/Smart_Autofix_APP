@@ -2,6 +2,12 @@ import { generalFields } from "../../middlewares/validation.middleware.js";
 import joi from "joi";
 import { fileValidation } from "../../utils/multer/local.multer.js";
 // Validation schemas for user module
+export const userId = {
+    params: joi.object().keys({
+        userId: generalFields.id.required(),
+    }),
+};
+
 export const shareProfile = {
     params: joi.object().keys({
         userId: generalFields.id.required(),

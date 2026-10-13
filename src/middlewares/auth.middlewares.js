@@ -4,16 +4,14 @@ import { tokenTypeEnum } from "../utils/security/token.security.js";
 
 export const authentication = ({ tokenType = tokenTypeEnum.access } = {}) => {
     return asyncHandler(async (req, res, next) => {
-        const { user, decoded } = await decodedToken({
+        const result = await decodedToken({
             authorization: req.headers.authorization,
             next,
             tokenType,
         });
-        if (!user) return;
-        req.user = user;
-        req.decoded = decoded;
-        // console.log("FIELDS CONFIG OK");
-        // console.log("Keys from Postman:", req.body ? Object.keys(req.body) : null );
+        if (!result?.user) return;
+        req.user = result.user;
+        req.decoded = result.decoded;
         next();
     });
 };
@@ -36,21 +34,21 @@ export const auth = ({
     accessRoles = [],
 } = {}) =>
     asyncHandler(async (req, res, next) => {
-        const { user, decoded } = await decodedToken({
+        const result = await decodedToken({
             authorization: req.headers.authorization,
             next,
             tokenType,
         });
 
-        if (!user) return;
-        if (!accessRoles.includes(user.role)) {
+        if (!result?.user) return;
+        if (!accessRoles.includes(result.user.role)) {
             return next(
                 new Error("You are not authorized to access this resource", {
                     cause: 403,
                 })
             );
         }
-        req.user = user;
-        req.decoded = decoded;
+        req.user = result.user;
+        req.decoded = result.decoded;
         return next();
     });
