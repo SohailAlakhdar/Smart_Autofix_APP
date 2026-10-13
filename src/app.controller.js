@@ -23,12 +23,23 @@ const bootstrap = async (customPort) => {
     app.use(express.json());
 
     // CORS
-     app.use(
-    cors({
-      origin: process.env.CORS_ORIGIN.split(',').map((origin) => origin.trim()),
-      credentials: true,
-    })
-  );
+    const allowedOrigins = process.env.CORS_ORIGIN || process.env.ORIGINS;
+    const originList = allowedOrigins
+        ? allowedOrigins.split(",").map((origin) => origin.trim())
+        : ["*"];
+
+    app.use(
+        cors({
+            origin: (origin, callback) => {
+                if (!origin || originList.includes("*") || originList.includes(origin)) {
+                    callback(null, true);
+                } else {
+                    callback(new Error("Not allowed by CORS"));
+                }
+            },
+            credentials: true,
+        })
+    );
 
     // limiter
     const limiter = rateLimit({
